@@ -3,9 +3,17 @@
 ; compiled version of it. Any changes should be made for personal use only.
 ; original by: Jimmy Mardell <mja@algonet.se>
 
-	.nolist		
-	#include "ion.inc"
-	.list	
+#include "kernel.inc"
+    .db "KEXC"
+    .db KEXC_ENTRY_POINT
+    .dw start
+    .db KEXC_STACK_SIZE
+    .dw 20
+    .db KEXC_NAME
+    .dw name
+    .db KEXC_HEADER_END
+name:
+    .db "ztetris", 0
 	
 #ifdef TI83P		
 	.org progstart-2
@@ -61,7 +69,7 @@ high	  = TEXT_MEM+65      ; BYTE
 linkcnt   = TEXT_MEM+66      ; BYTE
 board	  = TEXT_MEM2       ; 40 BYTE
 
-Start:
+start:
  res 1,(iy+13)	     ;VERY IMPORTANT, because i am using TXTSHADOW to replace TEXT_MEM
  res 6,(iy+9)	     ;VERY IMPORTANT since I am using the STATVARS. Thanks SCaBBY!
  ld hl,Resume	      
@@ -1512,8 +1520,8 @@ LD_HL_MHL:
  ret
 
 
-;	  лл	 лл   лл    ллл   ллл	ллл
-;  лллл   лл	лл     лл    л	  л	  л
+;	  \DB\DB	 \DB\DB   \DB\DB    \DB\DB\DB   \DB\DB\DB	\DB\DB\DB
+;  \DB\DB\DB\DB   \DB\DB	\DB\DB     \DB\DB    \DB	  \DB	  \DB
 ;
 
 BitData:	       ; Compressed data of the pieces (28 pieces)

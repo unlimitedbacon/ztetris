@@ -85,23 +85,26 @@ start:
     kcall(ShowB)                       ; This will show the next bit
     kjp(MainLoop)
 
+; KnightOS TODO:
+; This function inverts the level number when selecting a level
+; Rewrite it to invert a block of the screen determined by A (0 through 9)
 PutDigit:                              ; Puts digit A on the correct place
-    push af                            ; Used when choosing ProgStart level
-    ld l,2
-    cp 5
-    jr c,FirstRow
-    inc l
-    sub 5
-FirstRow:
-    add a,a
-    inc a
-    ld h,a
-    ld (currow),hl
-    pop af
-    push af
-    add a,48
-    pcall(_putc)                       ; display # in a
-    pop af
+;    push af                            ; Used when choosing ProgStart level
+;    ld l,2
+;    cp 5
+;    jr c,FirstRow
+;    inc l
+;    sub 5
+;FirstRow:
+;    add a,a
+;    inc a
+;    ld h,a
+;    ld (currow),hl
+;    pop af
+;    push af
+;    add a,48
+;    pcall(drawChar)                       ; display # in a
+;    pop af
     ret
 
 ReProgStart:
@@ -125,17 +128,17 @@ ChoosePlayers:
     ld l,a
     ld a,5
     ld (currow),hl
-    pcall(_putc)                       ; Put the small arrow
+    pcall(drawChar)                       ; Put the small arrow
     pop af
     ld h,$03
     sub 6
     neg
     ld l,a
     ld a,32
-    ld (currow),hl
-    pcall(_putc)                       ; And remove it from the other position
+    ;ld (currow),hl
+    pcall(drawChar)                       ; And remove it from the other position
 WKCP:
-    pcall(_getcsc)
+    pcall(getKey)
     kld(hl,players)
     cp $0f
     kjp(z,Quit)
@@ -237,7 +240,7 @@ WaitKey:
 ShowScrFlag:
     kcall(FastPuts)                    ; Show "scrambled" or "unscrambled"
 GetKey:
-    pcall(_getcsc)
+    pcall(getKey)
     or a
     jr z,GetKey
     cp $0f
@@ -288,7 +291,7 @@ FixIt:
     inc de
 FastPuts:
     ld (currow),de
-    pcall(_puts)
+    pcall(drawStr)
     ret
 
 DecHigh:
@@ -364,7 +367,7 @@ NoWait:
     xor a
     ld (hsflag),a
     ld (sbyte),a                       ; This is a linkbuffer byte
-    pcall(_clrlcdf)
+    pcall(clearBuffer)
     kcall(RandP)                       ; Randomize the first piece
 
     ld hl,$FFFF
@@ -419,7 +422,7 @@ DelayLoop:
     kld(hl,flags)
     res 1,(hl)                         ; Clear the update flag
     
-    pcall(_getcsc)
+    pcall(getKey)
     cp $0f
     kjp(z,AbortGame)
     cp $37
@@ -554,7 +557,7 @@ PLoop2:
 PLoop:
     ei
     halt
-    pcall(_getcsc)
+    pcall(getKey)
     cp 9
     kjp(z,Wait)
     dec (hl)
@@ -757,7 +760,7 @@ SendWinByte:
     jr z,FlashGameOver
     djnz SendWinByte
 FlashGameOver:
-    pcall(_getcsc)
+    pcall(getKey)
     cp $09
     jr z,CheckHiscore
     cp $0f
@@ -779,7 +782,7 @@ FlashWait:
 YouWinP:
     pop hl
 YouWin:
-    pcall(_getcsc)
+    pcall(getKey)
     cp $09
     jr z,CheckHiscore
     cp $0f
@@ -809,7 +812,7 @@ CheckHiscore:
 CheckP:
     push hl
     kcall(LD_HL_MHL)
-    pcall(_cphlde)
+    pcall(cpHLDE)
     pop hl
     jr c,ScoreGreater
     push de
@@ -872,7 +875,7 @@ RepClear:
 
 WaK:                                   ; A simple string input routine follows
     push hl
-    pcall(_getcsc)
+    pcall(getKey)
     cp $38
     jr z,BackSpace
     cp $09
@@ -902,7 +905,7 @@ PutLetter:
     inc hl
     inc b
     ld a,c
-    pcall(_putc)
+    pcall(drawChar)
     jr WaK
 BackSpace:
     pop hl
@@ -916,7 +919,7 @@ BackSpace:
     kld(hl,curcol)
     dec (hl)
     ld a,32
-    pcall(_putc)
+    pcall(drawChar)
     dec (hl)
     pop hl
     jr WaK
@@ -934,7 +937,7 @@ RepCheckBar:
     kcall(LD_HL_MHL)
     pop af
     ld de,%1110000000000111            ; This would indicate an empty row
-    pcall(_cphlde)
+    pcall(cpHLDE)
     pop hl
     jr z,EmptyRow
     inc a
@@ -1003,7 +1006,10 @@ NotPoss:
 NewB:                                  ; Creates a new piece and updates information
     ld hl,(scoreU)
     ld h,0
-    pcall(_divhlby10)                  ; L = (scoreU) DIV 10
+    push bc
+        ld c, 10
+        pcall(divHLByC)                ; L = (scoreU) DIV 10
+    pop bc
     ld (scoreU),a                      ; (scoreU) = (scoreU) MOD 10
     ld a,l
     or a
@@ -1022,7 +1028,7 @@ RepScan:
     push hl
     kcall(LD_HL_MHL)
     ld de,$FFFF                        ; This would indicate a full row
-    pcall(_cphlde)
+    pcall(cpHLDE)
     jr nz,NextRow                      ; If it wasn't check next row
     pop hl
     push bc
@@ -1084,7 +1090,10 @@ NoPenLines:
     ld a,(level)
     inc a
     ld l,a
-    pcall(_htimesl)                    ; Multiply with (level+1)
+    push de
+        ld e, l
+        pcall(mul8By8)                 ; Multiply with (level+1)
+    pop de
     ex de,hl
     kld(hl,score)
     push hl
@@ -1100,7 +1109,10 @@ NoScoring:
     ld h,0
     ld a,(lines)
     ld l,a
-    pcall(_divhlby10)                  ; HL = lines DIV 10
+    push bc
+        ld c, 10
+        pcall(divHLByC)                ; HL = lines DIV 10
+    pop bc
     ld a,(level)
     cp l                               ; Check if the level should increase
     jr nc,NoNewLevel
@@ -1459,16 +1471,16 @@ RepPut:
     ret
 
 FastVputs:
-    ld (pencol),de
-    pcall(_vputs)
+    ;ld (pencol),de
+    pcall(drawStr)
     ret
 FastPutc:
-    ld (currow),de
-    pcall(_putc)
+    ;ld (currow),de
+    pcall(drawChar)
     ret
 
 ShowFrame:                             ; Clears the screen and shows some info
-    pcall(_clrlcdf)
+    pcall(clearBuffer)
     ld de,$0000
     ;set 3,(iy+5)                      ; Invert text
     kld(hl,Title)
@@ -1483,7 +1495,7 @@ Quit:
     ;set 1,(iy+13)                     ; Same with TextShadow
     ;set 2,(iy+8)                      ; Enable automatic powerdown
 Quitter:
-    pcall(_cleargbuf)
+    ;pcall(_cleargbuf)
     ret
 
 F_DM_HL_DECI3:
@@ -1494,12 +1506,15 @@ DM_HL_DECI3:                           ; Display HL in menu style with leading z
     ld (de),a
 RepUnp:
     dec de
-    pcall(_divhlby10)
+    push bc
+        ld c, 10
+        pcall(divHLByC)
+    pop bc
     add a,48
     ld (de),a
     djnz RepUnp
     ex de,hl
-    pcall(_vputs)
+    pcall(drawStr)
     ret
 
 LD_HL_MHL:

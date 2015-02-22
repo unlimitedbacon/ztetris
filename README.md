@@ -1,10 +1,35 @@
-     ZTETRIS v1.1 -   by Jimmy Mårdell  <yarin@acc.umu.se>
-                      Sam Heald <evil_sam@hotmail.com>
-                      Patrick Davidson <eeulplek@hotmail.com>
+# ZTetris
 
-	ION and Ti-83/+ Version by Ahmed El-Helw <ahmed.ticalc.org>
+The best TI-83+ Tetris ported to KnightOS.
 
-12/18/2000
+[Original](http://www.ticalc.org/archives/files/fileinfo/94/9489.html) by Jimmy Mårdell  <yarin@acc.umu.se>
+Sam Heald <evil_sam@hotmail.com>
+Patrick Davidson <eeulplek@hotmail.com>
+
+ION and Ti-83/+ Version by Ahmed El-Helw <ahmed.ticalc.org>
+
+## Compiling
+
+First, install the [KnightOS SDK](http://www.knightos.org/sdk).
+
+    $ knightos init
+    $ make
+    $ make run # to test
+    $ make package # to produce an installable package
+
+## Installing
+
+Use `make package` to get a package that you can install.
+
+## Help, Bugs, Feedback
+
+If you need help with KnightOS, want to keep up with progress, chat with
+developers, or ask any other questions about KnightOS, you can hang out in the
+IRC channel: [#knightos on irc.freenode.net](http://webchat.freenode.net/?channels=knightos).
+ 
+To report bugs, please create [a GitHub issue](https://github.com/KnightOS/KnightOS/issues/new) or contact us on IRC.
+ 
+If you'd like to contribute to the project, please see the [contribution guidelines](http://www.knightos.org/contributing).
 
 
 FEATURES
@@ -41,40 +66,43 @@ FEATURES
 
 CONTROL
 -------
+```
 Choosing players:    Up/Down      - Change number of players
-		     1/2          - Choose that number of players
-		     Clear        - Quit
+                     1/2          - Choose that number of players
+                     Clear        - Quit
 
 At the option menu:  Arrowkeys    - Choose level
-		     Enter        - Start level
-		     S            - Toggle "2-4 lines", "1-3 lines" (LP only)
-		     L            - Toggle scrambled/unscrambled lines (LP)
-		     Trace        - Decrease start high
-		     Graph        - Increase start high
-		     Clear        - Quit game
+                     Enter        - Start level
+                     S            - Toggle "2-4 lines", "1-3 lines" (LP only)
+                     L            - Toggle scrambled/unscrambled lines (LP)
+                     Trace        - Decrease start high
+                     Graph        - Increase start high
+                     Clear        - Quit game
 
 When playing:        Left & Right - Move the piece to the left and right
-		     Up & 2nd     - Rotate clockwise
-		     Down         - Move the piece faster down
-		     xto          - Drop key
-		     Alpha        - Rotate anti-clockwise
-		     Clear        - Quit game
-		     Mode         - Pause
-		     Del          - Teacher key. Quickly jumps out to
-				    TI-OS. The game will resume when you
-				    start it the next time.
+                     Up & 2nd     - Rotate clockwise
+                     Down         - Move the piece faster down
+                     xto          - Drop key
+                     Alpha        - Rotate anti-clockwise
+                     Clear        - Quit game
+                     Mode         - Pause
+                     Del          - Teacher key. Quickly jumps out to
+                                    TI-OS. The game will resume when you
+                                    start it the next time.
 
 When typing name:    A-Z, Space   - Enter letter (max 10 chars)
-		     Enter        - Continue
-		     Left arrow   - Backspace
+                     Enter        - Continue
+                     Left arrow   - Backspace
+```
 
 SCORING
 -------
-	   L 0    L 1   L 2   L 3   L 4   L 5   L 6   L 7   L 8    L 9
-1 line   |    4 |   8 |  12 |  16 |  20 |  24 |  28 |  32 |   36 |   40 |
-2 lines  |   10 |  20 |  30 |  40 |  50 |  60 |  70 |  80 |   90 |  100 |
-3 lines  |   30 |  60 |  90 | 120 | 150 | 180 | 210 | 240 |  270 |  300 |
-4 lines  |  120 | 240 | 360 | 480 | 600 | 720 | 840 | 960 | 1080 | 1200 |
+|          | L 0  | L 1 | L 2 | L 3 | L 4 | L 5 | L 6 | L 7 | L 8  | L 9  |
+| -------- | ---- | --- | --- | --- | --- | --- | --- | --- | ---- | ---- |
+| 1 line   |    4 |   8 |  12 |  16 |  20 |  24 |  28 |  32 |   36 |   40 |
+| 2 lines  |   10 |  20 |  30 |  40 |  50 |  60 |  70 |  80 |   90 |  100 |
+| 3 lines  |   30 |  60 |  90 | 120 | 150 | 180 | 210 | 240 |  270 |  300 |
+| 4 lines  |  120 | 240 | 360 | 480 | 600 | 720 | 840 | 960 | 1080 | 1200 |
 
 When dropping a piece, your score will increase with dropsteps/10 (the
 last digit will remain in memory, although not shown). Every time you
@@ -142,7 +170,7 @@ ION Version 1.1 *Released by Sam Heald
 - Fixed Blinking text bug (no more black line)
 - Changed pause screen to shut down after ~1 minute (battery saver)
 - Fixed a few crashing bugs (not Ahmed's fault, TI changed the
-	inputs and outputs of a few ROM calls)
+    inputs and outputs of a few ROM calls)
 - Size: 3341 bytes
 
 
@@ -193,6 +221,8 @@ Ti-83 Thanks...
  Joe Wingerbermuhle - the faster graph buffer copy [and fixing it!] 
  Djpupon, Dustin Graham, and BlackBelt - for reporting the bugs
  My Beta Testers - for suggestions.
+
+------------------------------------------------------------------------------
  
 HOW TO CONTACT (SAM) ABOUT THE 82 VERSION
 -----------------
@@ -200,29 +230,31 @@ The best way is to send an email to evil_sam@hotmail.com.
 
   Visit my webpage at www.cswnet.com/~ddward/index.html for the latest info.
 
-------------------------------------------------------------------------------
+
 HOW TO CONTACT (PATRICK) ABOUT THE 82 VERSION
 ----------------
-     WWW - http://www.calweb.com/~kwdavids/patrick/
-           http://www.toptown.com/hp/ariwsi/
-   EMail - ariwsi@juno.com
-           ariwsi@rocketmail.com
-           eeulplek@hotmail.com
+      WWW - http://www.calweb.com/~kwdavids/patrick/
+            http://www.toptown.com/hp/ariwsi/
+    EMail - ariwsi@juno.com
+            ariwsi@rocketmail.com
+            eeulplek@hotmail.com
 
-------------------------------------------------------------------------------
-
-Contacting Ahmed about 83 Version - http://ahmed.ticalc.org
-                                    ahmed@ticalc.org
+HOW TO CONTACT (Ahmed) about 83 Version
+----------------
+http://ahmed.ticalc.org
+ahmed@ticalc.org
 
 HOW TO CONTACT (JIMMY) ABOUT ANY OTHER VERSION OF ZTETRIS
 -----------------
 The easiest way is to send an email to mja@algonet.se, but you can also
 find me on IRC, #calc-ti at EFnet with the nick Yarin. I'm usually there
 about 11:00 pm - 02:00 am CET (5:00-8:00 EST).
-IRC......: Yarin                             
-Email....: mailto:yarin@acc.umu.se        
-Homepage.: http://www.acc.umu.se/~yarin/
+IRC:         Yarin
+Email:       mailto:yarin@acc.umu.se
+Homepage:    http://www.acc.umu.se/~yarin/
+
 ------------------------------------------------------------------------------
+
 //Ahmed El-Helw <ahmed@ticalc.org / http://ahmed.ticalc.org>
 //Sam Heald <evil_sam@hotmail.com / http://void.calc.org>
 //Jimmy M†rdell <yarin@acc.umu.se / http://www.acc.umu.se/~yarin>

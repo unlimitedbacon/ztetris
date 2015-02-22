@@ -127,7 +127,7 @@ ChoosePlayers:
     add a,3
     ld l,a
     ld a,5
-    ld (currow),hl
+    ;ld (currow),hl
     pcall(drawChar)                       ; Put the small arrow
     pop af
     ld h,$03
@@ -184,7 +184,7 @@ NewPos:
     push bc
     kcall(FastVputs)                   ; Show name
     ld a,$46
-    ld (pencol),a
+    ;ld (pencol),a
     ld b,5
     push hl
     kcall(LD_HL_MHL)                   ; Get that persons score
@@ -290,7 +290,7 @@ FixIt:
     kcall(FastPuts)
     inc de
 FastPuts:
-    ld (currow),de
+    ;ld (currow),de
     pcall(drawStr)
     ret
 
@@ -802,7 +802,8 @@ WFlashWait:
     jr YouWin
 
 CheckHiscore:
-    kcall(Quitter)
+    ;kcall(Quitter)
+    kcall(Quit)
     ld a,(players)
     dec a
     kjp(nz,LevelChoose)                ; No hiscore when two players
@@ -866,10 +867,10 @@ RepClear:
     kld(hl,EnterTxt)
     kcall(FastVputs)                   ; "You entered ..."
     ld de,$1915
-    ld (pencol),de
+    ;ld (pencol),de
     kcall(FastVputs)                   ; "Enter your name"
     ld hl,$0305
-    ld (currow),hl
+    ;ld (currow),hl
     pop hl
     ld b,0                             ; B = number of letters entered so far
 
@@ -1441,7 +1442,8 @@ PastePattern:                          ; XOR the pattern on the screen
     kld(de,APD_BUF)
 PasteIt:
     ld a,(de)
-    xor (ix)
+    ; This line crashes sass
+    ;xor (ix)
     ld (ix),a
     inc de
     dec hl
@@ -1494,12 +1496,12 @@ Quit:
     ;set 6,(iy+9)                      ; Restore the StatVars, to avoid screen garbage
     ;set 1,(iy+13)                     ; Same with TextShadow
     ;set 2,(iy+8)                      ; Enable automatic powerdown
-Quitter:
+;Quitter:
     ;pcall(_cleargbuf)
     ret
 
 F_DM_HL_DECI3:
-    ld (pencol),de
+    ;ld (pencol),de
 DM_HL_DECI3:                           ; Display HL in menu style with leading zeros
     kld(de,string+5)
     xor a

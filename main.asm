@@ -21,6 +21,7 @@ name:
 description:
     .db "The Best TI-83+ Tetris",0
 
+; TODO: make all references to these variables offsets from IX
 cBitOfs   .equ 0       ; WORD
 cBit      .equ 2       ; 4 BYTE
 cXY       .equ 6       ; WORD
@@ -53,6 +54,8 @@ high      .equ 65      ; BYTE
 linkcnt   .equ 66      ; BYTE
 board     .equ 67      ; 40 BYTE
 ;107 Bytes total
+APD_BUF   .equ 107     ; 768 BYTE (Undoubtedly not all of this is used. TODO: Find out how much we actually need)
+;875 Bytes total
 
 start:
     ; KnightOS:
@@ -60,6 +63,10 @@ start:
     ; we don't need this so we can reclaim IY for the screen buffer
     ;res 1,(iy+13)                     ; Disable saving characters in textShadow ;VERY IMPORTANT, because i am using TXTSHADOW to replace TEXT_MEM
     ;res 6,(iy+9)                      ; Stats are invalid                       ;VERY IMPORTANT since I am using the STATVARS. Thanks SCaBBY!
+    ; KnightOS TODO:
+    ; * Allocate RAM (IX)
+    ; * Allocate screen buffer (IY)
+    ; * Get keypad and screen locks
     kld(hl, Resume)
     ld a,(hl)
 ; Knightos TODO:
@@ -196,7 +203,7 @@ NewPos:
     pop bc
     pop af
     djnz NewPos
-    jr WaitKey
+    jr ZWaitKey
 Show2PlayOpt:
     ld de,$0005
     kld(hl,SLTxt)
@@ -214,7 +221,7 @@ Show2PlayOpt:
     xor a
     ld (declines),a                    ; Clear the flags to the two option above
     ld (scrflag),a
-WaitKey:
+ZWaitKey:
     ;res 3,(iy+5)                      ; Not invert text
     kcall(FixIt)
     ld a,(level)
@@ -227,7 +234,7 @@ WaitKey:
     kcall(FastPutc)                    ; And show the High
     ld a,(players)
     dec a                              ; If two players, the two players options
-    jr z,GetKey                        ; should be shown as well
+    jr z,ZGetKey                        ; should be shown as well
     ld de,$0606
     kld(hl,ScrambleTxt)
     ld a,(scrflag)
@@ -239,10 +246,10 @@ WaitKey:
     pop de
 ShowScrFlag:
     kcall(FastPuts)                    ; Show "scrambled" or "unscrambled"
-GetKey:
+ZGetKey:
     pcall(getKey)
     or a
-    jr z,GetKey
+    jr z,ZGetKey
     cp $0f
     kjp(z,Quit)
     cp $09
@@ -257,7 +264,7 @@ GetKey:
     jr nz,CheckLevChg
     ld a,(players)
     dec a
-    jr z,GetKey
+    jr z,ZGetKey
     ld a,(declines)
     xor 1                              ; Change the declines flag (1-3 or 2-4)
     ld (declines),a
@@ -271,8 +278,8 @@ GetKey:
     add hl,de
     pop de
     kcall(FastPuts)                    ; Update it on the screen
-ToWaitKey:                             ; This label is to avoid JPs below (saves a few bytes)
-    jr WaitKey
+ToZWaitKey:                             ; This label is to avoid JPs below (saves a few bytes)
+    jr ZWaitKey
 CheckLevChg:
     dec a
     jr z,ChangeRow
@@ -281,7 +288,7 @@ CheckLevChg:
     dec a
     jr z,LevRight
     dec a
-    jr nz,ToWaitKey
+    jr nz,ToZWaitKey
     jr ChangeRow
 
 FixIt:
@@ -297,18 +304,18 @@ FastPuts:
 DecHigh:
     ld a,(high)
     or a
-    jr z,GetKey                        ; Don't decrease if high is 0
+    jr z,ZGetKey                        ; Don't decrease if high is 0
     dec a
     ld (high),a
-    jr ToWaitKey
+    jr ToZWaitKey
 
 IncHigh:
     ld a,(high)
     cp 5
-    jr z,GetKey                        ; Don't increase if high is 5
+    jr z,ZGetKey                        ; Don't increase if high is 5
     inc a
     ld (high),a
-    jr ToWaitKey
+    jr ToZWaitKey
 
 ChangeRow:
     ld a,(level)
@@ -322,7 +329,7 @@ SetLevel:
     kcall(PutDigit)                    ; Remove the inverted digit
     ld a,b
     ld (level),a                       ; And set the new level
-    jr ToWaitKey
+    jr ToZWaitKey
 LevLeft:
     ld a,(level)
     dec a
@@ -337,7 +344,7 @@ ChangeScrFlag:
     ld a,(hl)
     xor 1
     ld (hl),a
-    jr ToWaitKey
+    jr ToZWaitKey
 
 ProgStartGame:
     ld a,(level)
@@ -350,18 +357,19 @@ ProgStartGame:
     xor a
     ld (lastbar),a
 
-    kcall(ShowFrame)
-    ld de,$0304
-    kld(hl,WaitTxt)
-    kcall(FastPuts)                    ; "* WAITING *"
+    ; Networking is disabled due to lack of KnightOS support
+    ;kcall(ShowFrame)
+    ;ld de,$0304
+    ;kld(hl,WaitTxt)
+    ;kcall(FastPuts)                    ; "* WAITING *"
 
-    kcall(ReceiveByte)
-    or a
-    jr nz,NoWait                       ; If byte gotten, the other calc was waiting
-    ld a,1
-    ld (hsflag),a                      ; This will allow the user to cancel with EXIT
-    ld a,$AA
-    kcall(SendByte)                    ; Else wait until the other calc responds
+    ;kcall(ReceiveByte)
+    ;or a
+    ;jr nz,NoWait                       ; If byte gotten, the other calc was waiting
+    ;ld a,1
+    ;ld (hsflag),a                      ; This will allow the user to cancel with EXIT
+    ;ld a,$AA
+    ;kcall(SendByte)                    ; Else wait until the other calc responds
 
 NoWait:
     xor a
@@ -457,7 +465,7 @@ dwait:
     ld a,b
     or c
     jr nz,dwait
-    kcall(ionFastCopy)
+    pcall(fastCopy)
     
     kld(hl,linkcnt)
     dec (hl)
@@ -579,7 +587,10 @@ PsuedoAPD:
 
 ShowBar:                               ; Show the bar
     ld (lastbar),a
-    kld(hl,GRAPH_MEM + (63 * 12) + 11)
+    ;kld(hl,GRAPH_MEM + (63 * 12) + 11)
+    push iy \ pop hl
+    ld de, (63 * 12) + 11
+    add hl, de
     ld de,-12
     ld b,64
     add a,a
@@ -704,40 +715,41 @@ GetLinkInfo:                           ; Fins out what happens to the opponent
     ld (hl),10                         ; Reset the link counter
     ld a,(players)
     dec a
-    ret z                              ; If one player, leave this routine
-    kcall(ReceiveByte)                 ; Get a byte
-    or a
-    jr z,CheckSByte                    ; If no byte received, check if a byte should be sent
-    ld b,a
-    and $0F
-    ld c,a
-    ld a,b
-    srl a
-    srl a
-    srl a
-    srl a
-    cp $0F
-    jr z,PenaltyRows
-    cp $0C
-    kjp(z,YouWinP)
-    cp $0D
-    jr z,UpdateBar
-    cp $0E
-    ret nz
-    ld c,16
-UpdateBar:
-    ld a,c
-    kjp(ShowBar)
-PenaltyRows:
-    ld a,c
-    inc a
-    kjp(AddLines)
+    ret                                ; Networking disabled due to lack of support in KnightOS
+;    ret z                              ; If one player, leave this routine
+;    kcall(ReceiveByte)                 ; Get a byte
+;    or a
+;    jr z,CheckSByte                    ; If no byte received, check if a byte should be sent
+;    ld b,a
+;    and $0F
+;    ld c,a
+;    ld a,b
+;    srl a
+;    srl a
+;    srl a
+;    srl a
+;    cp $0F
+;    jr z,PenaltyRows
+;    cp $0C
+;    kjp(z,YouWinP)
+;    cp $0D
+;    jr z,UpdateBar
+;    cp $0E
+;    ret nz
+;    ld c,16
+;UpdateBar:
+;    ld a,c
+;    kjp(ShowBar)
+;PenaltyRows:
+;    ld a,c
+;    inc a
+;    kjp(AddLines)
 
-CheckSByte:
-    ld a,(sbyte)                       ; Check if byte in send buffer
-    or a
-    kcall(nz,SendByte)                 ; If so, send it
-    ret
+;CheckSByte:
+;    ld a,(sbyte)                       ; Check if byte in send buffer
+;    or a
+;    kcall(nz,SendByte)                 ; If so, send it
+;    ret
 
 AbortGame:
     ld a,(players)
@@ -750,15 +762,16 @@ GameOver:
     jr z,FlashGameOver                 ; If a two player game, send a byte telling
     ld a,$C0                           ; that you lost
     ld b,3
-SendWinByte:
-    push bc
-    kcall(SendByte)
-    kcall(ReceiveByte)                 ; This is for clearing up stuff (if both sent
-    ld a,(sbyte)                       ; at the same time)
-    or a
-    pop bc
-    jr z,FlashGameOver
-    djnz SendWinByte
+; Networking disabled
+;SendWinByte:
+;    push bc
+;    kcall(SendByte)
+;    kcall(ReceiveByte)                 ; This is for clearing up stuff (if both sent
+;    ld a,(sbyte)                       ; at the same time)
+;    or a
+;    pop bc
+;    jr z,FlashGameOver
+;    djnz SendWinByte
 FlashGameOver:
     pcall(getKey)
     cp $09
@@ -768,7 +781,7 @@ FlashGameOver:
     ;ld a,(iy+5)                       ; Invert textFlags
     ;xor 8
     ;ld (iy+5),a
-    kcall(ionFastCopy)
+    pcall(fastCopy)
     ld de,$0303
     kld(hl,GameOverText)
     kcall(FastPuts)
@@ -790,7 +803,7 @@ YouWin:
     ;ld a,(iy+5)                       ; Invert textFlags
     ;xor 8
     ;ld (iy+5),a
-    kcall(ionFastCopy)
+    pcall(fastCopy)
     ld de,$0403
     kld(hl,WinTxt)
     kcall(FastPuts)
@@ -917,7 +930,7 @@ BackSpace:
     dec hl
     push hl
     ld (hl),32
-    kld(hl,curcol)
+    ;kld(hl,curcol)
     dec (hl)
     ld a,32
     pcall(drawChar)
@@ -947,7 +960,8 @@ RepCheckBar:
     djnz RepCheckBar
 EmptyRow:
     add a,$D0
-    kjp(SendByte)                      ; Send high information to opponent
+    ; Networking disabled
+    ;kjp(SendByte)                      ; Send high information to opponent
 
 ShowCurB:                              ; This shows the current piece
     ld de,(cXY)
@@ -1074,7 +1088,8 @@ NextRow:
     neg                                ; Now A = no of penalty lines
     push af
     or $F0
-    kcall(SendByte)                    ; Send it over to the opponent
+    ; Networking disabled
+    ;kcall(SendByte)                    ; Send it over to the opponent
     pop af
     kld(hl,lastbar)
     add a,(hl)                         ; Increase the opponents bar
@@ -1310,7 +1325,8 @@ GetBlockOfs:                           ; Finds out where on the screen H,L is
     ld d,0
     ld e,a
     add hl,de
-    kld(de,GRAPH_MEM)
+    ;kld(de,GRAPH_MEM)
+    push iy \ pop de
     add hl,de
     ld b,4
     ld de,12
@@ -1358,7 +1374,8 @@ ShowLayout:                            ; Shows the game layout
 GFXNewRow:
     ld de,12
     ld b,64
-    kld(ix,GRAPH_MEM)
+    ;kld(ix,GRAPH_MEM)
+    push iy \ pop ix
 DWNextRow:
     ld (ix+5),$10
     ld (ix+10),$08
@@ -1401,7 +1418,9 @@ SP_Byte:
     pop bc
     djnz SP_Row
     kld(ix,Gaps)
-    ld b,(ix-1)
+    ; sass does not like this
+    ;ld b,(ix-1)
+    ld b,(ix+-1)
 MakeGap:
     push bc
     ld h,(ix+1)
@@ -1437,20 +1456,22 @@ MK_SameByte:
     djnz MakeGap
 
 PastePattern:                          ; XOR the pattern on the screen
-    ld hl,768
-    kld(ix,GRAPH_MEM)
-    kld(de,APD_BUF)
+    push iy
+        ld hl,768
+        ;kld(ix,GRAPH_MEM)
+        kld(de,APD_BUF)
 PasteIt:
-    ld a,(de)
-    ; This line crashes sass
-    ;xor (ix)
-    ld (ix),a
-    inc de
-    dec hl
-    inc ix
-    ld a,h
-    or l
-    jr nz,PasteIt
+        ld a,(de)
+        ; This line crashes sass
+        ;xor (iy)
+        ld (iy),a
+        inc de
+        dec hl
+        inc iy
+        ld a,h
+        or l
+        jr nz,PasteIt
+    pop iy
     ret
 
 ShowWell:                              ; Show the whole well
@@ -1649,7 +1670,5 @@ Gaps:                                ; Gaps where the pattern shouldn't be shown
     .dw $0D9 \ .db $EF,14,23         ;level
     .dw $1B1 \ .db $EF,14,23         ;Lines
     .dw $271 \ .db $EF,10,23         ;Next piece
-
-.include "linkrout.h"
 
 .end

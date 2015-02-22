@@ -55,6 +55,11 @@ board     .equ 67      ; 40 BYTE
 ;107 Bytes total
 
 start:
+    ; KnightOS:
+    ; TIOS stores system flags in IY+offset
+    ; we don't need this so we can reclaim IY for the screen buffer
+    ;res 1,(iy+13)                     ; Disable saving characters in textShadow ;VERY IMPORTANT, because i am using TXTSHADOW to replace TEXT_MEM
+    ;res 6,(iy+9)                      ; Stats are invalid                       ;VERY IMPORTANT since I am using the STATVARS. Thanks SCaBBY!
     kld(hl, Resume)
     ld a,(hl)
 ; Knightos TODO:
@@ -197,7 +202,7 @@ Show2PlayOpt:
     ld de,$0006
     kld(hl,InfoText+12)
     kcall(FastPuts)                    ; "Lines "
-    set 3,(iy+5)
+    ;set 3,(iy+5)                      ; Invert text
     ld a,76
     kcall(FastPutc)                    ; Invert the 'S'
     pop de
@@ -207,12 +212,12 @@ Show2PlayOpt:
     ld (declines),a                    ; Clear the flags to the two option above
     ld (scrflag),a
 WaitKey:
-    res 3,(iy+5)
+    ;res 3,(iy+5)                      ; Not invert text
     kcall(FixIt)
     ld a,(level)
-    set 3,(iy+5)
+    ;set 3,(iy+5)                      ; Invert text
     kcall(PutDigit)                    ; Invert the ProgStarting level digit
-    res 3,(iy+5)
+    ;res 3,(iy+5)                      ; Not invert text
     ld a,(high)
     ld de,$0E03
     add a,48
@@ -757,9 +762,9 @@ FlashGameOver:
     jr z,CheckHiscore
     cp $0f
     jr z,CheckHiscore
-    ld a,(iy+5)
-    xor 8
-    ld (iy+5),a
+    ;ld a,(iy+5)                       ; Invert textFlags
+    ;xor 8
+    ;ld (iy+5),a
     kcall(ionFastCopy)
     ld de,$0303
     kld(hl,GameOverText)
@@ -779,9 +784,9 @@ YouWin:
     jr z,CheckHiscore
     cp $0f
     jr z,CheckHiscore
-    ld a,(iy+5)
-    xor 8
-    ld (iy+5),a
+    ;ld a,(iy+5)                       ; Invert textFlags
+    ;xor 8
+    ;ld (iy+5),a
     kcall(ionFastCopy)
     ld de,$0403
     kld(hl,WinTxt)
@@ -1128,7 +1133,7 @@ CreateNew:
 NotDead:
     kjp(ShowCurB)                      ; Show the current piece
 ShowInfo:                              ; Updates score, level and lives
-    set 7, (iy+$14)
+    ;set 7, (iy+$14)                   ; write text to graph buffer (plotSScreen)
     ld de,$070C
     kld(hl,score)
     kcall(LD_HL_MHL)
@@ -1146,7 +1151,7 @@ ShowInfo:                              ; Updates score, level and lives
     ld h,0
     ld b,3
     kcall(F_DM_HL_DECI3)
-    res 7, (iy+$14)
+    ;res 7, (iy+$14)                   ; write text directly to display
     ret
 CreateNewPiece:
     ld de,$1403
@@ -1326,7 +1331,7 @@ RMul:
     ret
 
 ShowLayout:                            ; Shows the game layout
-    set 7, (iy+$14)
+    ;set 7, (iy+$14)                   ; write text to graph buffer (plotSScreen)
     push de
     ld de,$000C
     kld(hl,InfoText)
@@ -1336,7 +1341,7 @@ ShowLayout:                            ; Shows the game layout
     ld de,$240C
     kcall(FastVputs)
     pop de
-    res 7, (iy+$14)
+    ;res 7, (iy+$14)                   ; write text directly to display
 GFXNewRow:
     ld de,12
     ld b,64
@@ -1465,18 +1470,18 @@ FastPutc:
 ShowFrame:                             ; Clears the screen and shows some info
     pcall(_clrlcdf)
     ld de,$0000
-    set 3,(iy+5)
+    ;set 3,(iy+5)                      ; Invert text
     kld(hl,Title)
     kcall(FastPuts)
-    res 3,(iy+5)
+    ;res 3,(iy+5)                      ; Not invert text
     ld de,57*256+0
     kld(hl,Coder)
     jr FastVputs
 
 Quit:
-    set 6,(iy+9)                       ; Restore the StatVars, to avoid screen garbage
-    set 1,(iy+13)                      ; Same with TextShadow
-    set 2,(iy+8)
+    ;set 6,(iy+9)                      ; Restore the StatVars, to avoid screen garbage
+    ;set 1,(iy+13)                     ; Same with TextShadow
+    ;set 2,(iy+8)                      ; Enable automatic powerdown
 Quitter:
     pcall(_cleargbuf)
     ret

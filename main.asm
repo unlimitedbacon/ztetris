@@ -4,6 +4,7 @@
 ; original by: Jimmy Mardell <mja@algonet.se>
 
 #include "kernel.inc"
+#include "corelib.inc"
     .db "KEXC"
     .db KEXC_ENTRY_POINT
     .dw start
@@ -20,6 +21,13 @@ name:
     .db "ZTetris",0
 description:
     .db "The Best TI-83+ Tetris",0
+
+; Assember bugs:
+; SASS:
+; * explodes with xor (ix)
+; * does not like ld b,(ix-1)
+; SCAS:
+; * does not like DOS line endings?
 
 ; TODO: make all references to these variables offsets from IX
 cBitOfs   .equ 0       ; WORD
@@ -56,6 +64,7 @@ board     .equ 67      ; 40 BYTE
 ;107 Bytes total
 APD_BUF   .equ 107     ; 768 BYTE (Undoubtedly not all of this is used. TODO: Find out how much we actually need)
 ;875 Bytes total
+memSize   .equ 875
 
 start:
     ; KnightOS:
@@ -63,34 +72,41 @@ start:
     ; we don't need this so we can reclaim IY for the screen buffer
     ;res 1,(iy+13)                     ; Disable saving characters in textShadow ;VERY IMPORTANT, because i am using TXTSHADOW to replace TEXT_MEM
     ;res 6,(iy+9)                      ; Stats are invalid                       ;VERY IMPORTANT since I am using the STATVARS. Thanks SCaBBY!
-    ; KnightOS TODO:
-    ; * Allocate RAM (IX)
-    ; * Allocate screen buffer (IY)
-    ; * Get keypad and screen locks
-    kld(hl, Resume)
-    ld a,(hl)
-; Knightos TODO:
-; Disable the TIOS style resume code (storing persistent variables in the program itself)
-; and make it instead simply pause and switch back to castle.
-; Perhaps add option to store savegame to flash.
-    or a                               ; Check if the game should resume
-    jr z,ReProgStart
-    ld (hl),0                          ; Clear that flag so it doesn't resume next time
-    inc hl
-    kld(de,cBitOfs)
-    ld bc,67
-    ldir                               ; Copy variables
-    kld(de,board)
-    ld bc,40
-    ldir
-    kcall(ShowLayout)
-    kcall(ShowInfo)
-    kcall(ShowWell)
-    kcall(ShowCurB)
-    ld de,$1403
-    ld hl,cB+16
-    kcall(ShowB)                       ; This will show the next bit
-    kjp(MainLoop)
+    pcall(getLcdLock)
+    pcall(getKeypadLock)
+    kld(de,corelibPath)
+    pcall(loadLibrary)
+    pcall(allocScreenBuffer)
+    ret nz                             ; Exit if insufficient memory
+    ld bc, memSize
+    pcall(malloc)
+    ret nz                             ; Exit if insufficient memory
+    ; Knightos TODO:
+    ; Disable the TIOS style resume code (storing persistent variables in the program itself)
+    ; and make it instead simply pause and switch back to castle.
+    ; Perhaps add option to store savegame to flash.
+    ;kld(hl, Resume)
+    ;ld a,(hl)
+    ;or a                               ; Check if the game should resume
+    ;jr z,ReProgStart
+    ;ld (hl),0                          ; Clear that flag so it doesn't resume next time
+    ;inc hl
+    ;kld(de,cBitOfs)
+    ;ld bc,67
+    ;ldir                               ; Copy variables
+    ;kld(de,board)
+    ;ld bc,40
+    ;ldir
+    ;kcall(ShowLayout)
+    ;kcall(ShowInfo)
+    ;kcall(ShowWell)
+    ;kcall(ShowCurB)
+    ;ld de,$1403
+    ;ld hl,cB+16
+    ;kcall(ShowB)                       ; This will show the next bit
+    ;kjp(MainLoop)
+    jr $
+    jr ReProgStart
 
 ; KnightOS TODO:
 ; This function inverts the level number when selecting a level
@@ -115,6 +131,8 @@ PutDigit:                              ; Puts digit A on the correct place
     ret
 
 ReProgStart:
+    ; KnightOS TODO:
+    ; Switch to CoreLib style window for start menu
     kcall(ShowFrame)                   ; Show title
     ld de,$1010
     kcall(FastVputs)                   ; "Choose player mode"
@@ -1503,15 +1521,23 @@ FastPutc:
     ret
 
 ShowFrame:                             ; Clears the screen and shows some info
-    pcall(clearBuffer)
-    ld de,$0000
+    ;pcall(clearBuffer)
+    ;ld de,$0000
     ;set 3,(iy+5)                      ; Invert text
     kld(hl,Title)
-    kcall(FastPuts)
+    jr $
+    xor a                              ; Draw castle and threadlist icons
+    corelib(drawWindow)
+    ;kcall(FastPuts)
     ;res 3,(iy+5)                      ; Not invert text
     ld de,57*256+0
+    ld de, 2 << 8 | 50                 ; X = 2, Y = 50
     kld(hl,Coder)
-    jr FastVputs
+    ;jr FastVputs
+    pcall(drawStr)
+    pcall(fastCopy)
+    jr $
+    ret
 
 Quit:
     ;set 6,(iy+9)                      ; Restore the StatVars, to avoid screen garbage
@@ -1593,7 +1619,7 @@ Hiscore:
     .db "3. ----------",0,0,0
 
 Title:
-    .db "  ZTetris v1.1  ",0
+    .db "ZTetris v1.1",0
 
 Coder:
     .db "by: Sam H/Jimmy M/Pat D/AE",0
@@ -1670,5 +1696,8 @@ Gaps:                                ; Gaps where the pattern shouldn't be shown
     .dw $0D9 \ .db $EF,14,23         ;level
     .dw $1B1 \ .db $EF,14,23         ;Lines
     .dw $271 \ .db $EF,10,23         ;Next piece
+
+corelibPath:
+    .db "/lib/core", 0
 
 .end

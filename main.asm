@@ -9,13 +9,17 @@
     .dw start
     .db KEXC_STACK_SIZE
     .dw 20
+    .db KEXC_KERNEL_VER
+    .db 0, 6
     .db KEXC_NAME
     .dw name
+    .db KEXC_DESCRIPTION
+    .dw description
     .db KEXC_HEADER_END
 name:
-    .db "ZTetris 1.1",0
-
-APD_BUF   = $86EC
+    .db "ZTetris",0
+description:
+    .db "The Best TI-83+ Tetris",0
 
 cBitOfs   .equ 0       ; WORD
 cBit      .equ 2       ; 4 BYTE
@@ -51,33 +55,33 @@ board     .equ 67      ; 40 BYTE
 ;107 Bytes total
 
 start:
-    ld hl,Resume          
+    kld(hl, Resume)
     ld a,(hl)
 ; Knightos TODO:
 ; Disable the TIOS style resume code (storing persistent variables in the program itself)
 ; and make it instead simply pause and switch back to castle.
 ; Perhaps add option to store savegame to flash.
-    or a                ; Check if the game should resume
+    or a                               ; Check if the game should resume
     jr z,ReProgStart
-    ld (hl),0           ; Clear that flag so it doesn't resume next time
+    ld (hl),0                          ; Clear that flag so it doesn't resume next time
     inc hl
-    ld de,cBitOfs
+    kld(de,cBitOfs)
     ld bc,67
-    ldir                ; Copy variables
-    ld de,board
+    ldir                               ; Copy variables
+    kld(de,board)
     ld bc,40
     ldir
-    call ShowLayout
-    call ShowInfo
-    call ShowWell
-    call ShowCurB
+    kcall(ShowLayout)
+    kcall(ShowInfo)
+    kcall(ShowWell)
+    kcall(ShowCurB)
     ld de,$1403
     ld hl,cB+16
-    call ShowB          ; This will show the next bit
-    jp MainLoop
+    kcall(ShowB)                       ; This will show the next bit
+    kjp(MainLoop)
 
-PutDigit:               ; Puts digit A on the correct place
-    push af             ; Used when choosing ProgStart level
+PutDigit:                              ; Puts digit A on the correct place
+    push af                            ; Used when choosing ProgStart level
     ld l,2
     cp 5
     jr c,FirstRow
@@ -91,23 +95,23 @@ FirstRow:
     pop af
     push af
     add a,48
-    bcall(_putc)        ; display # in a
+    pcall(_putc)                       ; display # in a
     pop af
     ret
 
 ReProgStart:
-    call ShowFrame      ; Show title
+    kcall(ShowFrame)                   ; Show title
     ld de,$1010
-    call FastVputs      ; "Choose player mode"
+    kcall(FastVputs)                   ; "Choose player mode"
     ld de,$0404
-    call FastPuts       ; "1 player"
+    kcall(FastPuts)                    ; "1 player"
     ld de,$0405
-    call FastPuts       ; "2 players"
+    kcall(FastPuts)                    ; "2 players"
     xor a
-    ld (stlevel),a      ; When ProgStarting a new game, stLevel and stHigh
-    ld (sthigh),a       ; will be reset
+    ld (stlevel),a                     ; When ProgStarting a new game, stLevel and stHigh
+    ld (sthigh),a                      ; will be reset
     inc a
-    ld (players),a      ; Default option, 1 player
+    ld (players),a                     ; Default option, 1 player
 ChoosePlayers:
     ld a,(players)
     ld h,$03
@@ -116,7 +120,7 @@ ChoosePlayers:
     ld l,a
     ld a,5
     ld (currow),hl
-    bcall(_putc)        ; Put the small arrow
+    pcall(_putc)                       ; Put the small arrow
     pop af
     ld h,$03
     sub 6
@@ -124,12 +128,12 @@ ChoosePlayers:
     ld l,a
     ld a,32
     ld (currow),hl
-    bcall(_putc)        ; And remove it from the other position
+    pcall(_putc)                       ; And remove it from the other position
 WKCP:
-    bcall(_getcsc)
-    ld hl,players
+    pcall(_getcsc)
+    kld(hl,players)
     cp $0f
-    jp z,Quit
+    kjp(z,Quit)
     cp $09
     jr z,LevelChoose
     cp $04
@@ -139,7 +143,7 @@ WKCP:
     jr WKCP
 ChangePlayers:
     ld a,(hl)
-    xor 3               ; This will turn 1 -> 2 and 2 -> 1
+    xor 3                              ; This will turn 1 -> 2 and 2 -> 1
     ld (hl),a
     jr ChoosePlayers
 OnePlayer:
@@ -148,20 +152,20 @@ OnePlayer:
 TwoPlayers:
     ld (hl),2
 LevelChoose:
-    call ShowFrame      ; I know I used these 2x, but that's to stop the on screen trash.
+    kcall(ShowFrame)                   ; I know I used these 2x, but that's to stop the on screen trash.
     ld a,(stlevel)
-    ld (level),a        ; The cursor will ProgStart at the last played level
+    ld (level),a                       ; The cursor will ProgStart at the last played level
     ld a,(sthigh)
-    ld (high),a         ; And with the high
+    ld (high),a                        ; And with the high
 NewDigit:
-    call FixIt
+    kcall(FixIt)
     ld de,$0C02
-    ld hl,HighTxt
-    call FastPuts       ; "High"
+    kld(hl,HighTxt)
+    kcall(FastPuts)                    ; "High"
     ld a,(players)
-    dec a               ; Check if the hiscore should be shown
-    jr nz,Show2PlayOpt  ; or two player options
-    ld hl,Hiscore
+    dec a                              ; Check if the hiscore should be shown
+    jr nz,Show2PlayOpt                 ; or two player options
+    kld(hl,Hiscore)
     ld a,$23
     ld b,3
 NewPos:
@@ -170,54 +174,54 @@ NewPos:
     add a,6
     push af
     push bc
-    call FastVputs      ; Show name
+    kcall(FastVputs)                   ; Show name
     ld a,$46
     ld (pencol),a
     ld b,5
     push hl
-    call LD_HL_MHL         ; Get that persons score
+    kcall(LD_HL_MHL)                   ; Get that persons score
 
-    call DM_HL_DECI3      ; And show it
+    kcall(DM_HL_DECI3)                 ; And show it
     pop hl
     inc hl
-    inc hl            ; HL -> next hiscore table entry
+    inc hl                             ; HL -> next hiscore table entry
     pop bc
     pop af
     djnz NewPos
     jr WaitKey
 Show2PlayOpt:
     ld de,$0005
-    ld hl,SLTxt
-    call FastPuts           ; "Send 2-4 lines"
+    kld(hl,SLTxt)
+    kcall(FastPuts)                    ; "Send 2-4 lines"
     push de
     ld de,$0006
-    ld hl,InfoText+12
-    call FastPuts       ; "Lines "
+    kld(hl,InfoText+12)
+    kcall(FastPuts)                    ; "Lines "
     set 3,(iy+5)
     ld a,76
-    call FastPutc       ; Invert the 'S'
+    kcall(FastPutc)                    ; Invert the 'S'
     pop de
     ld a,83
-    call FastPutc       ; And the 'L'
+    kcall(FastPutc)                    ; And the 'L'
     xor a
-    ld (declines),a       ; Clear the flags to the two option above
+    ld (declines),a                    ; Clear the flags to the two option above
     ld (scrflag),a
 WaitKey:
     res 3,(iy+5)
-    call FixIt
+    kcall(FixIt)
     ld a,(level)
     set 3,(iy+5)
-    call PutDigit     ; Invert the ProgStarting level digit
+    kcall(PutDigit)                    ; Invert the ProgStarting level digit
     res 3,(iy+5)
     ld a,(high)
     ld de,$0E03
     add a,48
-    call FastPutc       ; And show the High
+    kcall(FastPutc)                    ; And show the High
     ld a,(players)
-    dec a               ; If two players, the two players options
-    jr z,GetKey           ; should be shown as well
+    dec a                              ; If two players, the two players options
+    jr z,GetKey                        ; should be shown as well
     ld de,$0606
-    ld hl,ScrambleTxt
+    kld(hl,ScrambleTxt)
     ld a,(scrflag)
     or a
     jr z,ShowScrFlag
@@ -226,20 +230,20 @@ WaitKey:
     add hl,de
     pop de
 ShowScrFlag:
-    call FastPuts           ; Show "scrambled" or "unscrambled"
+    kcall(FastPuts)                    ; Show "scrambled" or "unscrambled"
 GetKey:
-    bcall(_getcsc)
+    pcall(_getcsc)
     or a
     jr z,GetKey
     cp $0f
-    jp z,Quit
+    kjp(z,Quit)
     cp $09
-    jp z,ProgStartGame
+    kjp(z,ProgStartGame)
     cp $32
     jr z,DecHigh
     cp $31
     jr z,IncHigh
-    cp $15               ;Right Parentheses
+    cp $15                             ; Right Parentheses
     jr z,ChangeScrFlag
     cp $2b
     jr nz,CheckLevChg
@@ -247,19 +251,19 @@ GetKey:
     dec a
     jr z,GetKey
     ld a,(declines)
-    xor 1               ; Change the declines flag (1-3 or 2-4)
+    xor 1                              ; Change the declines flag (1-3 or 2-4)
     ld (declines),a
     add a,a
     add a,a
     ld de,$0505
-    ld hl,NLTxt
+    kld(hl,NLTxt)
     push de
     ld d,0
     ld e,a
     add hl,de
     pop de
-    call FastPuts           ; Update it on the screen
-ToWaitKey:           ; This label is to avoid JPs below (saves a few bytes)
+    kcall(FastPuts)                    ; Update it on the screen
+ToWaitKey:                             ; This label is to avoid JPs below (saves a few bytes)
     jr WaitKey
 CheckLevChg:
     dec a
@@ -274,18 +278,18 @@ CheckLevChg:
 
 FixIt:
     ld de,$0002
-    ld hl,PixelFixer
-    call FastPuts
+    kld(hl,PixelFixer)
+    kcall(FastPuts)
     inc de
 FastPuts:
     ld (currow),de
-    bcall(_puts)
+    pcall(_puts)
     ret
 
 DecHigh:
     ld a,(high)
     or a
-    jr z,GetKey           ; Don't decrease if high is 0
+    jr z,GetKey                        ; Don't decrease if high is 0
     dec a
     ld (high),a
     jr ToWaitKey
@@ -293,23 +297,23 @@ DecHigh:
 IncHigh:
     ld a,(high)
     cp 5
-    jr z,GetKey           ; Don't increase if high is 5
+    jr z,GetKey                        ; Don't increase if high is 5
     inc a
     ld (high),a
     jr ToWaitKey
 
 ChangeRow:
     ld a,(level)
-    add a,5           ; Changing row is like adding with 5, mod 10
+    add a,5                            ; Changing row is like adding with 5, mod 10
 ChkLevEdges:
-    daa               ; Modulo 10 (sort of)
+    daa                                ; Modulo 10 (sort of)
     and $0F
 SetLevel:
     ld b,a
     ld a,(level)
-    call PutDigit        ; Remove the inverted digit
+    kcall(PutDigit)                    ; Remove the inverted digit
     ld a,b
-    ld (level),a           ; And set the new level
+    ld (level),a                       ; And set the new level
     jr ToWaitKey
 LevLeft:
     ld a,(level)
@@ -321,7 +325,7 @@ LevRight:
     jr ChkLevEdges
 
 ChangeScrFlag:
-    ld hl,scrflag
+    kld(hl,scrflag)
     ld a,(hl)
     xor 1
     ld (hl),a
@@ -329,8 +333,8 @@ ChangeScrFlag:
 
 ProgStartGame:
     ld a,(level)
-    ld (stlevel),a        ; Copy the selected level and high so they will
-    ld a,(high)           ; be default next time
+    ld (stlevel),a                     ; Copy the selected level and high so they will
+    ld a,(high)                        ; be default next time
     ld (sthigh),a
     ld a,(players)
     dec a
@@ -338,91 +342,91 @@ ProgStartGame:
     xor a
     ld (lastbar),a
 
-    call ShowFrame
+    kcall(ShowFrame)
     ld de,$0304
-    ld hl,WaitTxt
-    call FastPuts           ; "* WAITING *"
+    kld(hl,WaitTxt)
+    kcall(FastPuts)                    ; "* WAITING *"
 
-    call ReceiveByte
+    kcall(ReceiveByte)
     or a
-    jr nz,NoWait           ; If byte gotten, the other calc was waiting
+    jr nz,NoWait                       ; If byte gotten, the other calc was waiting
     ld a,1
-    ld (hsflag),a           ; This will allow the user to cancel with EXIT
+    ld (hsflag),a                      ; This will allow the user to cancel with EXIT
     ld a,$AA
-    call SendByte        ; Else wait until the other calc responds
+    kcall(SendByte)                    ; Else wait until the other calc responds
 
 NoWait:
     xor a
     ld (hsflag),a
-    ld (sbyte),a           ; This is a linkbuffer byte
-    bcall(_clrlcdf)
-    call RandP           ; Randomize the first piece
+    ld (sbyte),a                       ; This is a linkbuffer byte
+    pcall(_clrlcdf)
+    kcall(RandP)                       ; Randomize the first piece
 
     ld hl,$FFFF
     ld (board+2),hl
-    ld hl,board+4
+    kld(hl,board+4)
     ld b,18
-InitRow:           ; Setting up the border aroudn the well
+InitRow:                               ; Setting up the border aroudn the well
     ld (hl),%00000111
     inc hl
     ld (hl),%11100000
     inc hl
     djnz InitRow
 
-    call ShowLayout
-    ld hl,linkcnt           ; This counter decrease every frame. When 0,
-    ld (hl),10           ; check link port. If too often check, it slows down
+    kcall(ShowLayout)
+    kld(hl,linkcnt)                    ; This counter decrease every frame. When 0,
+    ld (hl),10                         ; check link port. If too often check, it slows down
     ld a,(players)
     dec a
-    ld a,0            ; Can't use 'xor a' here! It would affect the Z flag
-    call nz,ShowBar      ; Show the bar at height 0
+    ld a,0                             ; Can't use 'xor a' here! It would affect the Z flag
+    kcall(nz,ShowBar)                  ; Show the bar at height 0
 ResetVars:
     xor a
-    ld (flags),a           ; Clear a lot of vars
+    ld (flags),a                       ; Clear a lot of vars
     ld (cBit),a
     ld hl,0
     ld (scoreU),hl
-    ld (score),hl         ; Clears lines as well
-    call NewB           ; Prepares a new piece
+    ld (score),hl                      ; Clears lines as well
+    kcall(NewB)                        ; Prepares a new piece
     ld a,(high)
     or a
     jr z,MainLoop
-    ld hl,scrflag           ; If starting with trash lines, they should
-    ld b,(hl)           ; always be scrambled even though the option
-    push bc           ; unscrambled is set
+    kld(hl,scrflag)                    ; If starting with trash lines, they should
+    ld b,(hl)                          ; always be scrambled even though the option
+    push bc                            ; unscrambled is set
     push hl
-    ld (hl),1           ; So temporary set it to scrambled lines
-    add a,a           ; No trash lines = high*2
-    call AddLines        ; Create trash lines
+    ld (hl),1                          ; So temporary set it to scrambled lines
+    add a,a                            ; No trash lines = high*2
+    kcall(AddLines)                    ; Create trash lines
     pop hl
     pop bc
-    ld (hl),b           ; And reset the scrflag
+    ld (hl),b                          ; And reset the scrflag
 
-MainLoop:           ; The main loop
-    ld hl,LevelCnts
+MainLoop:                              ; The main loop
+    kld(hl,LevelCnts)
     ld a,(level)
     ld d,0
     ld e,a
     add hl,de
-    ld a,(hl)           ; A = the delay time of the current level
+    ld a,(hl)                          ; A = the delay time of the current level
     ld (counter),a
 DelayLoop:
-    ld hl,flags
-    res 1,(hl)           ; Clear the update flag
+    kld(hl,flags)
+    res 1,(hl)                         ; Clear the update flag
     
-    bcall(_getcsc)
+    pcall(_getcsc)
     cp $0f
-    jp z,AbortGame
+    kjp(z,AbortGame)
     cp $37
-    jp z,Pause
+    kjp(z,Pause)
     cp $36
-    jp z,Rotate
+    kjp(z,Rotate)
     cp $30
-    jp z,RotateBack
+    kjp(z,RotateBack)
     cp $38
-    jp z,TeacherKey
+    kjp(z,TeacherKey)
     cp $28
-    jp z,Drop
+    kjp(z,Drop)
     dec a
     jr z,MoveDown
     dec a
@@ -433,11 +437,11 @@ DelayLoop:
     jr z,Rotate
 
 Wait:
-    ld hl,flags
-    bit 0,(hl)           ; Check if the player became gameover this frame
-    jp nz,GameOver
-    bit 1,(hl)           ; Check if anything happened (movements)
-    call nz,Update        ; If so, update that
+    kld(hl,flags)
+    bit 0,(hl)                         ; Check if the player became gameover this frame
+    kjp(nz,GameOver)
+    bit 1,(hl)                         ; Check if anything happened (movements)
+    kcall(nz,Update)                   ; If so, update that
 
     ld bc,3200
 dwait:
@@ -445,129 +449,129 @@ dwait:
     ld a,b
     or c
     jr nz,dwait
-    call ionFastCopy
+    kcall(ionFastCopy)
     
-    ld hl,linkcnt
+    kld(hl,linkcnt)
     dec (hl)
-    call z,GetLinkInfo    ; If the link counter reaches zero, check link port
-    ld hl,counter
-    dec (hl)           ; Decrease the counter
-    jr nz,DelayLoop       ; If not zero, check for keys again
+    kcall(z,GetLinkInfo)               ; If the link counter reaches zero, check link port
+    kld(hl,counter)
+    dec (hl)                           ; Decrease the counter
+    jr nz,DelayLoop                    ; If not zero, check for keys again
     jr FallDown
 MoveDown:
-    ld hl,scoreU
-    inc (hl)           ; When DOWN is pressed, increase the score
+    kld(hl,scoreU)
+    inc (hl)                           ; When DOWN is pressed, increase the score
 FallDown:
-    call GetLinkInfo     ; Before moving down, always check linkport
-    ld hl,newXY
-    dec (hl)           ; Decrease the y coordinate
-    call Update           ; Check if possible
-    jp z,MainLoop        ; If so, repeat mainloop
+    kcall(GetLinkInfo)                 ; Before moving down, always check linkport
+    kld(hl,newXY)
+    dec (hl)                           ; Decrease the y coordinate
+    kcall(Update)                      ; Check if possible
+    kjp(z,MainLoop)                    ; If so, repeat mainloop
 BotReached:
-    ld hl,cB           ; Else the bottom is reached
+    ld hl,cB                           ; Else the bottom is reached
     ld de,(cXY)
     ld b,4
-StoreB:            ; Store the piece in the well
+StoreB:                                ; Store the piece in the well
     push hl
-    call LD_HL_MHL
+    kcall(LD_HL_MHL)
     add hl,de
-    call PutCoord
+    kcall(PutCoord)
     pop hl
     inc hl
     inc hl
     djnz StoreB
     ld a,(players)
     dec a
-    call nz,CheckBar     ; If two player, check your highest line
-    call NewB           ; Last, randomize a new piece
-    jp MainLoop
+    kcall(nz,CheckBar)                 ; If two player, check your highest line
+    kcall(NewB)                        ; Last, randomize a new piece
+    kjp(MainLoop)
 
 MoveRight:
-    ld hl,newXY+1
-    inc (hl)           ; Increase X coordinate
-    jr SetUpdateFlag      ; Set update flag
+    kld(hl,newXY+1)
+    inc (hl)                           ; Increase X coordinate
+    jr SetUpdateFlag                   ; Set update flag
 
 MoveLeft:
-    ld hl,newXY+1
-    dec (hl)           ; Decrease left coordinate
+    kld(hl,newXY+1)
+    dec (hl)                           ; Decrease left coordinate
 SetUpdateFlag:
-    ld hl,flags
-    set 1,(hl)           ; Set update flag
+    kld(hl,flags)
+    set 1,(hl)                         ; Set update flag
     jr Wait
 
 Rotate:
-    ld hl,newRot
+    kld(hl,newRot)
     inc (hl)
     jr SetUpdateFlag
 
 RotateBack:
-    ld hl,newRot
+    kld(hl,newRot)
     dec (hl)
     jr SetUpdateFlag
 
 Drop:
-    ld hl,scoreU           ; When dropping, increase score with the
-    inc (hl)           ; number of fallen steps
-    ld hl,newXY
-    dec (hl)           ; Decrease Y coordinate
-    call Update           ; Update it on screen
-    jr z,Drop           ; If OK, move down again
-    call GetLinkInfo     ; Get link info
-    jr BotReached           ; Bottom reached, store piece.
+    kld(hl,scoreU)                     ; When dropping, increase score with the
+    inc (hl)                           ; number of fallen steps
+    kld(hl,newXY)
+    dec (hl)                           ; Decrease Y coordinate
+    kcall(Update)                      ; Update it on screen
+    jr z,Drop                          ; If OK, move down again
+    kcall(GetLinkInfo)                 ; Get link info
+    jr BotReached                      ; Bottom reached, store piece.
 
 TeacherKey:
     ld a,(players)
     dec a
-    jp nz,Wait           ; If two players, teacher key not allowed
+    kjp(nz,Wait)                       ; If two players, teacher key not allowed
     inc a
-    ld de,Resume
-    ld (de),a           ; Set the resume flag
+    kld(de,Resume)
+    ld (de),a                          ; Set the resume flag
     inc de
-    ld hl,cBitOfs
-    ld bc,67           ; Copy all variables
+    kld(hl,cBitOfs)
+    ld bc,67                           ; Copy all variables
     ldir
-    ld hl,board
+    kld(hl,board)
     ld bc,40
-    ldir               ; And the well
-    jp Quit
+    ldir                               ; And the well
+    kjp(Quit)
 
 Pause:
     ld a,(players)
     dec a
-    jp nz,Wait           ; Pause not allowed in two player game
-    call ShowFrame
+    kjp(nz,Wait)                       ; Pause not allowed in two player game
+    kcall(ShowFrame)
     ld de,$0404
-    ld hl,PauseTxt
-    call FastPuts           ; "* PAUSE *"
+    kld(hl,PauseTxt)
+    kcall(FastPuts)                    ; "* PAUSE *"
     ld b,24
 PLoop2:
     ld (hl),$FF
 PLoop:
     ei
     halt
-    bcall(_getcsc)
+    pcall(_getcsc)
     cp 9
-    jp z,Wait
+    kjp(z,Wait)
     dec (hl)
     xor a
-    or (hl)     ;Make  HL activate Z-Flag
+    or (hl)                            ; Make  HL activate Z-Flag
     jr nz,PLoop
     ld a,b
     dec b
     or a
     jr nz,PLoop2
 PsuedoAPD:
-    DI            ; disable interrupts
+    DI                                 ; disable interrupts
     LD A,$01
-    OUT ($03),A    ;turn off screen
+    OUT ($03),A                        ; turn off screen
     EX AF,AF'
     EXX
-    EI            ; enable interrupts
-    jr Pause 
+    EI                                 ; enable interrupts
+    jr Pause
 
-ShowBar:           ; Show the bar
+ShowBar:                               ; Show the bar
     ld (lastbar),a
-    ld hl,GRAPH_MEM + (63 * 12) + 11
+    kld(hl,GRAPH_MEM + (63 * 12) + 11)
     ld de,-12
     ld b,64
     add a,a
@@ -590,13 +594,13 @@ ClearBar:
     djnz SB_Rep
     ret
 
-AddLines:           ; Add A lines, scrambled or unscrambled
+AddLines:                              ; Add A lines, scrambled or unscrambled
     ld b,a
     push bc
     ld c,b
     ld b,0
     sla c
-    ld de,board+34
+    kld(de,board+34)
     ld h,d
     ld l,e
     sbc hl,bc
@@ -609,9 +613,9 @@ AddLines:           ; Add A lines, scrambled or unscrambled
     ld a,b
     push af
     ld a,10
-    call PRandom
+    kcall(PRandom)
     ld (gap),a
-    ld hl,board+4
+    kld(hl,board+4)
 AddTrashRow:
     push bc
     ld de,$FFFF
@@ -627,12 +631,12 @@ Holes:
     jr PutGap
 RandGap:
     ld a,10
-    call PRandom
+    kcall(PRandom)
 PutGap:
     ld b,a
     inc b
 RotWord:
-    .db $CB,$35           ; SLL L - an undocumented Z80 instruction
+    .db $CB,$35                        ; SLL L - an undocumented Z80 instruction
     rl h
     djnz RotWord
     pop bc
@@ -650,7 +654,7 @@ RotWord:
     inc hl
     pop bc
     djnz AddTrashRow
-    ld hl,newXY
+    kld(hl,newXY)
     pop af
     add a,(hl)
     cp $10
@@ -658,25 +662,25 @@ RotWord:
     ld a,$10
 TopNotReached:
     ld (hl),a
-    call Update
+    kcall(Update)
     push af
-    call ShowWell
-    call ShowCurB
+    kcall(ShowWell)
+    kcall(ShowCurB)
     pop af
-    jp nz,GameOver
+    kjp(nz,GameOver)
     ret
 
-Update:            ; Update the piece on the screen.
-    call TestNewB        ; Return NZ if not possible move
+Update:                                ; Update the piece on the screen.
+    kcall(TestNewB)                    ; Return NZ if not possible move
     jr nz,Sync
-    call EraseCurB
+    kcall(EraseCurB)
     ld hl,(newXY)
     ld (cXY),hl
     ld a,(newRot)
     ld (cRot),a
     ld b,0
-    call Uncrunch
-    call ShowCurB
+    kcall(Uncrunch)
+    kcall(ShowCurB)
     xor a
 Sync:
     push af
@@ -687,15 +691,15 @@ Sync:
     pop af
     ret
 
-GetLinkInfo:           ; Fins out what happens to the opponent
-    ld hl,linkcnt
-    ld (hl),10           ; Reset the link counter
+GetLinkInfo:                           ; Fins out what happens to the opponent
+    kld(hl,linkcnt)
+    ld (hl),10                         ; Reset the link counter
     ld a,(players)
     dec a
-    ret z               ; If one player, leave this routine
-    call ReceiveByte     ; Get a byte
+    ret z                              ; If one player, leave this routine
+    kcall(ReceiveByte)                 ; Get a byte
     or a
-    jr z,CheckSByte       ; If no byte received, check if a byte should be sent
+    jr z,CheckSByte                    ; If no byte received, check if a byte should be sent
     ld b,a
     and $0F
     ld c,a
@@ -707,7 +711,7 @@ GetLinkInfo:           ; Fins out what happens to the opponent
     cp $0F
     jr z,PenaltyRows
     cp $0C
-    jp z,YouWinP
+    kjp(z,YouWinP)
     cp $0D
     jr z,UpdateBar
     cp $0E
@@ -715,40 +719,40 @@ GetLinkInfo:           ; Fins out what happens to the opponent
     ld c,16
 UpdateBar:
     ld a,c
-    jp ShowBar
+    kjp(ShowBar)
 PenaltyRows:
     ld a,c
     inc a
-    jp AddLines
+    kjp(AddLines)
 
 CheckSByte:
-    ld a,(sbyte)           ; Check if byte in send buffer
+    ld a,(sbyte)                       ; Check if byte in send buffer
     or a
-    call nz,SendByte     ; If so, send it
+    kcall(nz,SendByte)                 ; If so, send it
     ret
 
 AbortGame:
     ld a,(players)
     dec a
-    jp z,CheckHiscore    ; If one player abort, check hiscore table
+    kjp(z,CheckHiscore)                ; If one player abort, check hiscore table
 
 GameOver:
     ld a,(players)
     dec a
-    jr z,FlashGameOver    ; If a two player game, send a byte telling
-    ld a,$C0           ; that you lost
+    jr z,FlashGameOver                 ; If a two player game, send a byte telling
+    ld a,$C0                           ; that you lost
     ld b,3
 SendWinByte:
     push bc
-    call SendByte
-    call ReceiveByte     ; This is for clearing up stuff (if both sent
-    ld a,(sbyte)           ; at the same time)
+    kcall(SendByte)
+    kcall(ReceiveByte)                 ; This is for clearing up stuff (if both sent
+    ld a,(sbyte)                       ; at the same time)
     or a
     pop bc
     jr z,FlashGameOver
     djnz SendWinByte
 FlashGameOver:
-    bcall(_getcsc)
+    pcall(_getcsc)
     cp $09
     jr z,CheckHiscore
     cp $0f
@@ -756,10 +760,10 @@ FlashGameOver:
     ld a,(iy+5)
     xor 8
     ld (iy+5),a
-    call ionFastCopy
+    kcall(ionFastCopy)
     ld de,$0303
-    ld hl,GameOverText
-    call FastPuts
+    kld(hl,GameOverText)
+    kcall(FastPuts)
     ei
     ld b,20
 FlashWait:
@@ -770,7 +774,7 @@ FlashWait:
 YouWinP:
     pop hl
 YouWin:
-    bcall(_getcsc)
+    pcall(_getcsc)
     cp $09
     jr z,CheckHiscore
     cp $0f
@@ -778,10 +782,10 @@ YouWin:
     ld a,(iy+5)
     xor 8
     ld (iy+5),a
-    call ionFastCopy
+    kcall(ionFastCopy)
     ld de,$0403
-    ld hl,WinTxt
-    call FastPuts
+    kld(hl,WinTxt)
+    kcall(FastPuts)
     ei
     ld b,20
 WFlashWait:
@@ -790,33 +794,33 @@ WFlashWait:
     jr YouWin
 
 CheckHiscore:
-    call Quitter
+    kcall(Quitter)
     ld a,(players)
     dec a
-    jp nz,LevelChoose    ; No hiscore when two players
-    ld hl,Hiscore+14     ; HL -> hiscore
-    ld de,(score)          ; DE = your score
+    kjp(nz,LevelChoose)                ; No hiscore when two players
+    kld(hl,Hiscore+14)                 ; HL -> hiscore
+    ld de,(score)                      ; DE = your score
     ld b,3
 CheckP:
     push hl
-    call LD_HL_MHL
-    bcall(_cphlde)
+    kcall(LD_HL_MHL)
+    pcall(_cphlde)
     pop hl
     jr c,ScoreGreater
     push de
     ld de,16
-    add hl,de           ; HL -> next score in hiscore table
+    add hl,de                          ; HL -> next score in hiscore table
     pop de
     djnz CheckP
-    jp LevelChoose       ; Not in hiscore table
+    kjp(LevelChoose)                   ; Not in hiscore table
 ScoreGreater:
     ld a,4
     sub b
     ld (place),a
-    cp 3               ; If last place, no moves in hiscore table
+    cp 3                               ; If last place, no moves in hiscore table
     jr z,MoveDone
-    ld hl,Hiscore+19
-MoveAgain:           ; Else move the other people down
+    kld(hl,Hiscore+19)
+MoveAgain:                             ; Else move the other people down
     ld d,h
     ld e,l
     ld bc,16
@@ -824,12 +828,12 @@ MoveAgain:           ; Else move the other people down
     ex de,hl
     ld bc,13
     ldir
-    ld hl,Hiscore+3
+    kld(hl,Hiscore+3)
     dec a
     jr z,MoveAgain
 MoveDone:
-    ld a,(place)           ; Find out where to enter your name
-    ld hl,Hiscore+3
+    ld a,(place)                       ; Find out where to enter your name
+    kld(hl,Hiscore+3)
     ld de,16
     dec a
     jr z,EnterName
@@ -841,29 +845,29 @@ EnterName:
     push hl
     ld b,10
 RepClear:
-    ld (hl),32           ; Clear the previous name
+    ld (hl),32                         ; Clear the previous name
     inc hl
     djnz RepClear
     inc hl
     ld de,(score)
-    ld (hl),e           ; Put your score in the table
+    ld (hl),e                          ; Put your score in the table
     inc hl
     ld (hl),d
-    call ShowFrame
+    kcall(ShowFrame)
     ld de,$1211
-    ld hl,EnterTxt
-    call FastVputs           ; "You entered ..."
+    kld(hl,EnterTxt)
+    kcall(FastVputs)                   ; "You entered ..."
     ld de,$1915
     ld (pencol),de
-    call FastVputs           ; "Enter your name"
+    kcall(FastVputs)                   ; "Enter your name"
     ld hl,$0305
     ld (currow),hl
     pop hl
-    ld b,0            ; B = number of letters entered so far
+    ld b,0                             ; B = number of letters entered so far
 
-WaK:               ; A simple string input routine follows
+WaK:                                   ; A simple string input routine follows
     push hl
-    bcall(_getcsc)
+    pcall(_getcsc)
     cp $38
     jr z,BackSpace
     cp $09
@@ -874,7 +878,7 @@ WaK:               ; A simple string input routine follows
     pop hl
     jr PutLetter
 CheckLetter:
-    ld hl,Letters
+    kld(hl,Letters)
     push bc
     ld bc,26
     cpir
@@ -893,7 +897,7 @@ PutLetter:
     inc hl
     inc b
     ld a,c
-    bcall(_putc)
+    pcall(_putc)
     jr WaK
 BackSpace:
     pop hl
@@ -904,28 +908,28 @@ BackSpace:
     dec hl
     push hl
     ld (hl),32
-    ld hl,curcol
+    kld(hl,curcol)
     dec (hl)
     ld a,32
-    bcall(_putc)
+    pcall(_putc)
     dec (hl)
     pop hl
     jr WaK
 NameDone:
     pop hl
-    jp LevelChoose
+    kjp(LevelChoose)
 
-CheckBar:           ; Find out how it goes for ya
+CheckBar:                              ; Find out how it goes for ya
     xor a
-    ld hl,board+4
+    kld(hl,board+4)
     ld b,16
 RepCheckBar:
     push hl
     push af
-    call LD_HL_MHL
+    kcall(LD_HL_MHL)
     pop af
-    ld de,%1110000000000111   ; This would indicate an empty row
-    bcall(_cphlde)
+    ld de,%1110000000000111            ; This would indicate an empty row
+    pcall(_cphlde)
     pop hl
     jr z,EmptyRow
     inc a
@@ -934,52 +938,52 @@ RepCheckBar:
     djnz RepCheckBar
 EmptyRow:
     add a,$D0
-    jp SendByte           ; Send high information to opponent
+    kjp(SendByte)                      ; Send high information to opponent
 
-ShowCurB:           ; This shows the current piece
+ShowCurB:                              ; This shows the current piece
     ld de,(cXY)
     ld hl,cB
 ShowB:
     ld b,4
 SNext:
     push hl
-    call LD_HL_MHL
+    kcall(LD_HL_MHL)
     add hl,de
-    call PutBlock        ; Put one block of the piece
+    kcall(PutBlock)                    ; Put one block of the piece
     pop hl
     inc hl
     inc hl
     djnz SNext
     ret
 
-EraseCurB:           ; And this erase the current piece
+EraseCurB:                             ; And this erase the current piece
     ld de,(cXY)
     ld hl,cB
 EraseB:
     ld b,4
 ENext:
     push hl
-    call LD_HL_MHL
+    kcall(LD_HL_MHL)
     add hl,de
-    call EraseBlock
+    kcall(EraseBlock)
     pop hl
     inc hl
     inc hl
     djnz ENext
     ret
 
-TestNewB:           ; Check if the piece is at an allowed position
+TestNewB:                              ; Check if the piece is at an allowed position
     ld b,8
     ld a,(newRot)
-    call Uncrunch
+    kcall(Uncrunch)
     ld de,(newXY)
     ld hl,cB+8
     ld b,4
 TNext:
     push hl
-    call LD_HL_MHL
+    kcall(LD_HL_MHL)
     add hl,de
-    call GetCoord
+    kcall(GetCoord)
     jr nz,NotPoss
     pop hl
     inc hl
@@ -991,30 +995,30 @@ NotPoss:
     pop hl
     ret
 
-NewB:               ; Creates a new piece and updates information
+NewB:                                  ; Creates a new piece and updates information
     ld hl,(scoreU)
     ld h,0
-    bcall(_divhlby10)        ; L = (scoreU) DIV 10
-    ld (scoreU),a           ; (scoreU) = (scoreU) MOD 10
+    pcall(_divhlby10)                  ; L = (scoreU) DIV 10
+    ld (scoreU),a                      ; (scoreU) = (scoreU) MOD 10
     ld a,l
     or a
-    jr z,CheckLines       ; If scoreU was <10, no 'real' score update
+    jr z,CheckLines                    ; If scoreU was <10, no 'real' score update
     ex de,hl
     ld hl,(score)
     add hl,de
-    ld (score),hl           ; Else update the score
-    call ShowInfo
+    ld (score),hl                      ; Else update the score
+    kcall(ShowInfo)
 CheckLines:
     xor a
-    ld (linesflag),a      ; This holds how many lines you eliminated
-    ld hl,board+4
+    ld (linesflag),a                   ; This holds how many lines you eliminated
+    kld(hl,board+4)
     ld b,17
 RepScan:
     push hl
-    call LD_HL_MHL
-    ld de,$FFFF           ; This would indicate a full row
-    bcall(_cphlde)
-    jr nz,NextRow           ; If it wasn't check next row
+    kcall(LD_HL_MHL)
+    ld de,$FFFF                        ; This would indicate a full row
+    pcall(_cphlde)
+    jr nz,NextRow                      ; If it wasn't check next row
     pop hl
     push bc
     push de
@@ -1026,11 +1030,11 @@ RepScan:
     ld c,b
     ld b,0
     sla c
-    ldir               ; Move everything down
-    ld hl,linesflag
-    inc (hl)           ; Increase lines eliminated
-    ld hl,lines
-    inc (hl)           ; And also the total line counter
+    ldir                               ; Move everything down
+    kld(hl,linesflag)
+    inc (hl)                           ; Increase lines eliminated
+    kld(hl,lines)
+    inc (hl)                           ; And also the total line counter
     pop hl
     pop de
     pop bc
@@ -1042,136 +1046,136 @@ NextRow:
     djnz RepScan
     ld a,(linesflag)
     or a
-    jr z,NoScoring        ; If no lines gotten, no score increase
+    jr z,NoScoring                     ; If no lines gotten, no score increase
     push af
     ld b,a
     ld a,(players)
     dec a
-    jr z,NoPenLines       ; If one player, no penalty lines sent
+    jr z,NoPenLines                    ; If one player, no penalty lines sent
     push bc
-    call CheckBar
+    kcall(CheckBar)
     pop bc
     dec b
-    jr z,NoPenLines       ; If only one line eliminated, no penatly lines
-    ld a,(declines)       ; The flag, 1-3 or 2-4 lines to send
+    jr z,NoPenLines                    ; If only one line eliminated, no penatly lines
+    ld a,(declines)                    ; The flag, 1-3 or 2-4 lines to send
     sub b
-    neg               ; Now A = no of penalty lines
+    neg                                ; Now A = no of penalty lines
     push af
     or $F0
-    call SendByte        ; Send it over to the opponent
+    kcall(SendByte)                    ; Send it over to the opponent
     pop af
-    ld hl,lastbar
-    add a,(hl)           ; Increase the opponents bar
+    kld(hl,lastbar)
+    add a,(hl)                         ; Increase the opponents bar
     inc a
-    call ShowBar           ; And show it
+    kcall(ShowBar)                     ; And show it
 NoPenLines:
     pop af
-    ld hl,Scoring
+    kld(hl,Scoring)
     ld d,0
     ld e,a
     dec e
     add hl,de
-    ld h,(hl)           ; H = score for level 0
+    ld h,(hl)                          ; H = score for level 0
     ld a,(level)
     inc a
     ld l,a
-    bcall(_htimesl)       ; Multiply with (level+1)
+    pcall(_htimesl)                    ; Multiply with (level+1)
     ex de,hl
-    ld hl,score
+    kld(hl,score)
     push hl
-    call LD_HL_MHL
-    add hl,de           ; Add with total score so far
+    kcall(LD_HL_MHL)
+    add hl,de                          ; Add with total score so far
     ex de,hl
     pop hl
-    ld (hl),e           ; Store the new score
+    ld (hl),e                          ; Store the new score
     inc hl
     ld (hl),d
-    call ShowWell        ; Update the well
+    kcall(ShowWell)                    ; Update the well
 NoScoring:
     ld h,0
     ld a,(lines)
     ld l,a
-    bcall(_divhlby10)        ; HL = lines DIV 10
+    pcall(_divhlby10)                  ; HL = lines DIV 10
     ld a,(level)
-    cp l               ; Check if the level should increase
+    cp l                               ; Check if the level should increase
     jr nc,NoNewLevel
     ld a,l
-    ld (level),a           ; Update the levle
-    call PastePattern
-    call ShowPattern
+    ld (level),a                       ; Update the levle
+    kcall(PastePattern)
+    kcall(ShowPattern)
     ld a,(players)
     dec a
     jr z,NoNewLevel
     ld a,(lastbar)
-    call ShowBar
+    kcall(ShowBar)
 NoNewLevel:
 
-    call ShowInfo
+    kcall(ShowInfo)
 CreateNew:
-    call CreateNewPiece  ; Randomize new piece
+    kcall(CreateNewPiece)              ; Randomize new piece
     xor a
     ld (cRot),a
     ld (newRot),a
     ld b,0
-    call Uncrunch        ; Uncrunch the piece
+    kcall(Uncrunch)                    ; Uncrunch the piece
     ld hl,$0610
     ld (cXY),hl
     ld (newXY),hl
-    call TestNewB        ; Check if it's possible to put out the piece
+    kcall(TestNewB)                    ; Check if it's possible to put out the piece
     jr z,NotDead
-    ld hl,flags
-    set 0,(hl)           ; If not, set dead flag
+    kld(hl,flags)
+    set 0,(hl)                         ; If not, set dead flag
 NotDead:
-    jp ShowCurB           ; Show the current piece
-ShowInfo:           ; Updates score, level and lives
+    kjp(ShowCurB)                      ; Show the current piece
+ShowInfo:                              ; Updates score, level and lives
     set 7, (iy+$14)
     ld de,$070C
-    ld hl,score
-    call LD_HL_MHL
+    kld(hl,score)
+    kcall(LD_HL_MHL)
     ld b,5
-    call F_DM_HL_DECI3
+    kcall(F_DM_HL_DECI3)
     ld de,$1918
-    ld hl,level
+    kld(hl,level)
     ld l,(hl)
     ld h,0
     ld b,2
-    call F_DM_HL_DECI3
+    kcall(F_DM_HL_DECI3)
     ld de,$2B13
-    ld hl,lines
+    kld(hl,lines)
     ld l,(hl)
     ld h,0
     ld b,3
-    call F_DM_HL_DECI3
+    kcall(F_DM_HL_DECI3)
     res 7, (iy+$14)
-    ret      
+    ret
 CreateNewPiece:
     ld de,$1403
-    ld hl,cB+16           ; Remove the next piece
-    call EraseB
+    ld hl,cB+16                        ; Remove the next piece
+    kcall(EraseB)
 RandP:
     ld a,(next)
     ld (cBit),a
-    ld hl,(cNBitOfs)      ; Make it the current piece instead
+    ld hl,(cNBitOfs)                   ; Make it the current piece instead
     ld (cBitOfs),hl
     ld a,7
-    call PRandom        ; Get a random number between 0-6
-    inc a               ; Increase with 1 to get between 1-7
+    kcall(PRandom)                     ; Get a random number between 0-6
+    inc a                              ; Increase with 1 to get between 1-7
     ld (next),a
     add a,a
     add a,a
     add a,a
-    ld hl,BitData-8
+    kld(hl,BitData-8)
     ld d,0
     ld e,a
-    add hl,de           ; Find out where the bit structure is
+    add hl,de                          ; Find out where the bit structure is
     ld (cNBitOfs),hl
     ld b,16
     xor a
-    call Uncrunch2
+    kcall(Uncrunch2)
     ld de,$1403
-    ld hl,cB+16           ; Remove the next piece
-    jp ShowB
-Uncrunch:           ; Extracts the piece from compressed data
+    ld hl,cB+16                        ; Remove the next piece
+    kjp(ShowB)
+Uncrunch:                              ; Extracts the piece from compressed data
     ld hl,(cBitOfs)
 Uncrunch2:
     and %00000011
@@ -1186,7 +1190,7 @@ Uncrunch2:
     add hl,de
     ex de,hl
     pop hl
-    call LD_HL_MHL
+    kcall(LD_HL_MHL)
     ld b,8
 URep:
     ld a,l
@@ -1200,22 +1204,22 @@ URep:
     djnz URep
     ret
 
-PutCoord:           ; Stores a block in the wello
+PutCoord:                              ; Stores a block in the wello
     push hl
-    call GetBoardOfs
+    kcall(GetBoardOfs)
     or (hl)
     ld (hl),a
     pop hl
     ret
 
-GetCoord:           ; Finds out if there is a block in the well at H,L
+GetCoord:                              ; Finds out if there is a block in the well at H,L
     push hl
-    call GetBoardOfs
+    kcall(GetBoardOfs)
     and (hl)
     pop hl
     ret
 
-GetBoardOfs:           ; Convert location H,L to an address, HL
+GetBoardOfs:                           ; Convert location H,L to an address, HL
     push bc
     ld c,l
     sla c
@@ -1228,17 +1232,17 @@ LeftPart:
 RotateAgain:
     rlca
     djnz RotateAgain
-    ld hl,board
+    kld(hl,board)
     ld b,0
     add hl,bc
     pop bc
     ret
 
-PutBlock:           ; Put block at H,L
+PutBlock:                              ; Put block at H,L
     push bc
     push de
     push hl
-    call GetBlockOfs
+    kcall(GetBlockOfs)
 PutRow:
     push af
     or (hl)
@@ -1251,11 +1255,11 @@ PutRow:
     pop bc
     ret
 
-EraseBlock:           ; Erase a block at H,L
+EraseBlock:                            ; Erase a block at H,L
     push bc
     push de
     push hl
-    call GetBlockOfs
+    kcall(GetBlockOfs)
     xor $FF
 EraseRow:
     push af
@@ -1269,12 +1273,12 @@ EraseRow:
     pop bc
     ret
 
-GetBlockOfs:           ; Finds out where on the screen H,L is
+GetBlockOfs:                           ; Finds out where on the screen H,L is
     ld c,h
     ld h,0
     ld a,17
     sub l
-    jp m, OffScreen
+    kjp(m, OffScreen)
     ld l,a
     sla l
     add a,l \ ld l,a
@@ -1288,11 +1292,11 @@ GetBlockOfs:           ; Finds out where on the screen H,L is
     ld d,0
     ld e,a
     add hl,de
-    ld de,GRAPH_MEM
+    kld(de,GRAPH_MEM)
     add hl,de
     ld b,4
     ld de,12
-    ld a,$F0 
+    ld a,$F0
     bit 0,c
     ret z
     ld a,$0F
@@ -1302,7 +1306,7 @@ OffScreen:
      xor a
      ret
 
-PRandom:           ; Creates a pseudorandom number 0 <= x < A
+PRandom:                               ; Creates a pseudorandom number 0 <= x < A
     push bc
     push de
     push hl
@@ -1321,34 +1325,34 @@ RMul:
     pop bc
     ret
 
-ShowLayout:           ; Shows the game layout
-    set 7, (iy+$14)     
+ShowLayout:                            ; Shows the game layout
+    set 7, (iy+$14)
     push de
     ld de,$000C
-    ld hl,InfoText
-    call FastVputs
+    kld(hl,InfoText)
+    kcall(FastVputs)
     ld de,$120C
-    call FastVputs
+    kcall(FastVputs)
     ld de,$240C
-    call FastVputs
+    kcall(FastVputs)
     pop de
     res 7, (iy+$14)
 GFXNewRow:
     ld de,12
     ld b,64
-    ld ix,GRAPH_MEM
+    kld(ix,GRAPH_MEM)
 DWNextRow:
     ld (ix+5),$10
     ld (ix+10),$08
     add ix,de
     djnz DWNextRow
 
-ShowPattern:           ; Show pattern for the current level
-    ld hl,Pattern
+ShowPattern:                           ; Show pattern for the current level
+    kld(hl,Pattern)
     ld a,(level)
     cp 16
     jr c,Below16
-    ld a,15               ; If level>15, show pattern for level 15
+    ld a,15                            ; If level>15, show pattern for level 15
 Below16:
     add a,a
     add a,a
@@ -1358,7 +1362,7 @@ Below16:
     add hl,de
     push hl
     pop ix
-    ld de,APD_BUF
+    kld(de,APD_BUF)
     ld b,8
 SP_Row:
     push bc
@@ -1369,7 +1373,7 @@ SP_Line:
     ld a,(hl)
     inc hl
     push bc
-    ld b,12            ; was 16
+    ld b,12                            ; was 16
 SP_Byte:
     ld (de),a
     inc de
@@ -1378,13 +1382,13 @@ SP_Byte:
     djnz SP_Line
     pop bc
     djnz SP_Row
-    ld ix,Gaps
+    kld(ix,Gaps)
     ld b,(ix-1)
 MakeGap:
     push bc
     ld h,(ix+1)
     ld l,(ix)
-    ld de,APD_BUF
+    kld(de,APD_BUF)
     add hl,de
     ld a,(ix+2)
     ld b,(ix+3)
@@ -1406,7 +1410,7 @@ MK_SameByte:
     ld a,d
     pop hl
     pop bc
-    ld de,12            ;was 16
+    ld de,12                           ; was 16
     add hl,de
     djnz MK_Row
     ld de,5
@@ -1414,10 +1418,10 @@ MK_SameByte:
     pop bc
     djnz MakeGap
 
-PastePattern:          ; XOR the pattern on the screen
+PastePattern:                          ; XOR the pattern on the screen
     ld hl,768
-    ld ix,GRAPH_MEM
-    ld de,APD_BUF
+    kld(ix,GRAPH_MEM)
+    kld(de,APD_BUF)
 PasteIt:
     ld a,(de)
     xor (ix)
@@ -1430,16 +1434,16 @@ PasteIt:
     jr nz,PasteIt
     ret
 
-ShowWell:           ; Show the whole well
+ShowWell:                              ; Show the whole well
     ld hl,$0302
 SWNewRow:
     ld b,10
 RepPut:
-    call GetCoord
+    kcall(GetCoord)
     push af
-    call z,EraseBlock
+    kcall(z,EraseBlock)
     pop af
-    call nz,PutBlock
+    kcall(nz,PutBlock)
     inc h
     djnz RepPut
     ld h,$03
@@ -1451,46 +1455,46 @@ RepPut:
 
 FastVputs:
     ld (pencol),de
-    bcall(_vputs)
+    pcall(_vputs)
     ret
 FastPutc:
     ld (currow),de
-    bcall(_putc)
+    pcall(_putc)
     ret
 
-ShowFrame:           ; Clears the screen and shows some info
-    bcall(_clrlcdf)
+ShowFrame:                             ; Clears the screen and shows some info
+    pcall(_clrlcdf)
     ld de,$0000
     set 3,(iy+5)
-    ld hl,Title
-    call FastPuts
+    kld(hl,Title)
+    kcall(FastPuts)
     res 3,(iy+5)
     ld de,57*256+0
-    ld hl,Coder
+    kld(hl,Coder)
     jr FastVputs
 
 Quit:
-    set 6,(iy+9)        ;Restore the StatVars, to avoid screen garbage
-    set 1,(iy+13)        ;Same with TextShadow
+    set 6,(iy+9)                       ; Restore the StatVars, to avoid screen garbage
+    set 1,(iy+13)                      ; Same with TextShadow
     set 2,(iy+8)
 Quitter:
-    bcall(_cleargbuf)
+    pcall(_cleargbuf)
     ret
 
 F_DM_HL_DECI3:
     ld (pencol),de
-DM_HL_DECI3:           ; Display HL in menu style with leading zeros
-    ld de,string+5
+DM_HL_DECI3:                           ; Display HL in menu style with leading zeros
+    kld(de,string+5)
     xor a
     ld (de),a
 RepUnp:
     dec de
-    bcall(_divhlby10)
+    pcall(_divhlby10)
     add a,48
     ld (de),a
     djnz RepUnp
     ex de,hl
-    bcall(_vputs)
+    pcall(_vputs)
     ret
 
 LD_HL_MHL:
@@ -1507,7 +1511,7 @@ LD_HL_MHL:
 ;  ████   ██    ██     ██    █    █       █
 ;
 
-BitData:           ; Compressed data of the pieces (28 pieces)
+BitData:                             ; Compressed data of the pieces (28 pieces)
     .dw %0001010110011000,%0110010100000100
     .dw %0010000101011001,%0110101001010100
     .dw %0001010110010000,%0010011001010100
@@ -1523,7 +1527,7 @@ BitData:           ; Compressed data of the pieces (28 pieces)
     .dw %0001010110011101,%0111011001010100
     .dw %0001010110011101,%0111011001010100
 
-Scoring:           ; Score for each level
+Scoring:                             ; Score for each level
     .db 4,10,30,120
 
 LevelCnts:
@@ -1538,6 +1542,8 @@ Resume:
     .db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
     .db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 
+; KnightOS TODO:
+; High scores should be written to a file
 Hiscore:
     .db "1. ----------",0,0,0
     .db "2. ----------",0,0,0
@@ -1588,7 +1594,7 @@ Letters:
     .db $24,$2C,$0D,$15,$1D,$25,$2D,$0E,$16,$1E,$26
     .db $2E,$1F,$27,$2F
 
-PixelFixer:        ;Pixel Line Bug Fix
+PixelFixer:                          ;Pixel Line Bug Fix
     .db " 0 1 2 3 4",0
     .db " 5 6 7 8 9",0
 
@@ -1596,7 +1602,7 @@ InfoText:
     .db "Score",0
     .db "Level",0
     .db "Lines",0
-Pattern:           ; Pattern for each level
+Pattern:                             ; Pattern for each level
     .db $AA,$55,$AA,$55,$AA,$55,$AA,$55
     .db $88,$FF,$22,$FF,$88,$FF,$22,$FF
     .db $FF,$99,$99,$FF,$FF,$99,$99,$FF
@@ -1615,18 +1621,13 @@ Pattern:           ; Pattern for each level
     .db $FF,$EF,$47,$12,$B8,$FD,$FF,$FF
 
     .db 5
-Gaps:               ; Gaps where the pattern shouldn't be shown
-    .dw $005 \ .db $EF,64,42 ;well
-    .dw $001 \ .db $EF,14,23 ;score
-    .dw $0D9 \ .db $EF,14,23 ;level
-    .dw $1B1 \ .db $EF,14,23 ;Lines
-    .dw $271 \ .db $EF,10,23 ;Next piece
+Gaps:                                ; Gaps where the pattern shouldn't be shown
+    .dw $005 \ .db $EF,64,42         ;well
+    .dw $001 \ .db $EF,14,23         ;score
+    .dw $0D9 \ .db $EF,14,23         ;level
+    .dw $1B1 \ .db $EF,14,23         ;Lines
+    .dw $271 \ .db $EF,10,23         ;Next piece
 
-#ifdef TI83P
 .include "linkrout.h"
-
-#else
-.include "link83.h"
-#endif
 
 .end

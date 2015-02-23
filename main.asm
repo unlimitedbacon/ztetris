@@ -22,6 +22,9 @@ name:
 description:
     .db "The Best TI-83+ Tetris",0
 
+corelibPath:
+    .db "/lib/core", 0
+
 ; Assember bugs:
 ; SASS:
 ; * explodes with xor (ix)
@@ -105,7 +108,6 @@ start:
     ;ld hl,cB+16
     ;kcall(ShowB)                       ; This will show the next bit
     ;kjp(MainLoop)
-    jr $
     jr ReProgStart
 
 ; KnightOS TODO:
@@ -134,12 +136,16 @@ ReProgStart:
     ; KnightOS TODO:
     ; Switch to CoreLib style window for start menu
     kcall(ShowFrame)                   ; Show title
-    ld de,0x1010
-    kcall(FastVputs)                   ; "Choose player mode"
-    ld de,0x0404
-    kcall(FastPuts)                    ; "1 player"
-    ld de,0x0405
-    kcall(FastPuts)                    ; "2 players"
+    kld(hl,PlChoose)                   ; "Choose player mode"
+    ld de, 15*256+18                   ; X = 24 Y = 18
+    pcall(drawStr)
+    kld(hl,PlChoose1)                  ; "1 player"
+    ld de, 32*256+24
+    pcall(drawStr)
+    kld(hl,PlChoose2)                  ; "2 player"
+    ld de, 32*256+30
+    pcall(drawStr)
+    pcall(fastCopy)
     xor a
     ld (stlevel),a                     ; When ProgStarting a new game, stLevel and stHigh
     ld (sthigh),a                      ; will be reset
@@ -1436,9 +1442,7 @@ SP_Byte:
     pop bc
     djnz SP_Row
     kld(ix,Gaps)
-    ; sass does not like this
-    ;ld b,(ix-1)
-    ld b,(ix+-1)
+    ld b,(ix-1)
 MakeGap:
     push bc
     ld h,(ix+1)
@@ -1480,8 +1484,7 @@ PastePattern:                          ; XOR the pattern on the screen
         kld(de,APD_BUF)
 PasteIt:
         ld a,(de)
-        ; This line crashes sass
-        ;xor (iy)
+        xor (iy)
         ld (iy),a
         inc de
         dec hl
@@ -1521,22 +1524,13 @@ FastPutc:
     ret
 
 ShowFrame:                             ; Clears the screen and shows some info
-    ;pcall(clearBuffer)
-    ;ld de,0x0000
-    ;set 3,(iy+5)                      ; Invert text
     kld(hl,Title)
-    jr $
     xor a                              ; Draw castle and threadlist icons
     corelib(drawWindow)
-    ;kcall(FastPuts)
-    ;res 3,(iy+5)                      ; Not invert text
-    ld de,57*256+0
-    ld de, 2 << 8 | 50                 ; X = 2, Y = 50
+    ;ld de, 2 << 8 | 50                 ; X = 2, Y = 50
+    ld de, 2*256+50
     kld(hl,Coder)
-    ;jr FastVputs
     pcall(drawStr)
-    pcall(fastCopy)
-    jr $
     ret
 
 Quit:
@@ -1626,7 +1620,9 @@ Coder:
 
 PlChoose:
     .db "Choose player mode",0
+PlChoose1:
     .db "1 player",0
+PlChoose2:
     .db "2 players",0
 
 GameOverText:
@@ -1696,8 +1692,5 @@ Gaps:                                ; Gaps where the pattern shouldn't be shown
     .dw 0x0D9 \ .db 0xEF,14,23         ;level
     .dw 0x1B1 \ .db 0xEF,14,23         ;Lines
     .dw 0x271 \ .db 0xEF,10,23         ;Next piece
-
-corelibPath:
-    .db "/lib/core", 0
 
 .end

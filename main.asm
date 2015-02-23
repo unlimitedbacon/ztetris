@@ -25,13 +25,6 @@ description:
 corelibPath:
     .db "/lib/core", 0
 
-; Assember bugs:
-; SASS:
-; * explodes with xor (ix)
-; * does not like ld b,(ix-1)
-; SCAS:
-; * does not like DOS line endings?
-
 ; TODO: make all references to these variables offsets from IX
 cBitOfs   .equ 0       ; WORD
 cBit      .equ 2       ; 4 BYTE
@@ -1398,13 +1391,13 @@ ShowLayout:                            ; Shows the game layout
 GFXNewRow:
     ld de,12
     ld b,64
-    ;kld(ix,GRAPH_MEM)
-    push iy \ pop ix
+    push iy
 DWNextRow:
-    ld (ix+5),0x10
-    ld (ix+10),0x08
-    add ix,de
-    djnz DWNextRow
+        ld (iy+5),0x10
+        ld (iy+10),0x08
+        add iy,de
+        djnz DWNextRow
+    pop iy
 
 ShowPattern:                           ; Show pattern for the current level
     kld(hl,Pattern)
@@ -1419,68 +1412,67 @@ Below16:
     ld d,0
     ld e,a
     add hl,de
-    push hl
-    pop ix
-    kld(de,APD_BUF)
-    ld b,8
+    push iy
+        push hl \ pop iy
+        kld(de,APD_BUF)
+        ld b,8
 SP_Row:
-    push bc
-    push ix
-    pop hl
-    ld b,8
+        push bc
+            push iy \ pop hl
+            ld b,8
 SP_Line:
-    ld a,(hl)
-    inc hl
-    push bc
-    ld b,12                            ; was 16
+            ld a,(hl)
+            inc hl
+            push bc
+                ld b,12                    ; was 16
 SP_Byte:
-    ld (de),a
-    inc de
-    djnz SP_Byte
-    pop bc
-    djnz SP_Line
-    pop bc
-    djnz SP_Row
-    kld(ix,Gaps)
-    ld b,(ix-1)
+                ld (de),a
+                inc de
+                djnz SP_Byte
+            pop bc
+            djnz SP_Line
+        pop bc
+        djnz SP_Row
+        kld(iy,Gaps)
+        ld b,(iy-1)
 MakeGap:
-    push bc
-    ld h,(ix+1)
-    ld l,(ix)
-    kld(de,APD_BUF)
-    add hl,de
-    ld a,(ix+2)
-    ld b,(ix+3)
+        push bc
+            ld h,(iy+1)
+            ld l,(iy)
+            kld(de,APD_BUF)
+            add hl,de
+            ld a,(iy+2)
+            ld b,(iy+3)
 MK_Row:
-    push bc
-    push hl
-    ld d,a
-    ld b,(ix+4)
+            push bc
+            push hl
+                ld d,a
+                ld b,(iy+4)
 MK_Col:
-    ld c,a
-    and (hl)
-    ld (hl),a
-    ld a,c
-    rrca
-    jr c,MK_SameByte
-    inc hl
+                ld c,a
+                and (hl)
+                ld (hl),a
+                ld a,c
+                rrca
+                jr c,MK_SameByte
+                inc hl
 MK_SameByte:
-    djnz MK_Col
-    ld a,d
-    pop hl
-    pop bc
-    ld de,12                           ; was 16
-    add hl,de
-    djnz MK_Row
-    ld de,5
-    add ix,de
-    pop bc
-    djnz MakeGap
+                djnz MK_Col
+                ld a,d
+            pop hl
+            pop bc
+            ld de,12                       ; was 16
+            add hl,de
+            djnz MK_Row
+            ld de,5
+            add iy,de
+        pop bc
+        djnz MakeGap
+    pop iy
 
 PastePattern:                          ; XOR the pattern on the screen
     push iy
         ld hl,768
-        ;kld(ix,GRAPH_MEM)
         kld(de,APD_BUF)
 PasteIt:
         ld a,(de)

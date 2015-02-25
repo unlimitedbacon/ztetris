@@ -134,7 +134,7 @@ PutDigit:                              ; Puts digit A on the correct place
 ReProgStart:
     kcall(ShowFrame)                   ; Show title
     kld(hl,PlChoose)                   ; "Choose player mode"
-    ld de, 15*256+18                   ; X = 24 Y = 18
+    ld de, 15*256+18                   ; X = 15 Y = 18
     pcall(drawStr)
     kld(hl,PlChoose1)                  ; "1 player"
     ld de, 32*256+24
@@ -142,7 +142,6 @@ ReProgStart:
     kld(hl,PlChoose2)                  ; "2 player"
     ld de, 32*256+30
     pcall(drawStr)
-    pcall(fastCopy)
     xor a
     ld (ix+stlevel),a                  ; When ProgStarting a new game, stLevel and stHigh
     ld (ix+sthigh),a                   ; will be reset
@@ -150,35 +149,49 @@ ReProgStart:
     ld (ix+players),a                  ; Default option, 1 player
 ChoosePlayers:
     ld a,(ix+players)
-    ld h,0x03
+    ld d, 28                           ; X = 29
     push af
-    add a,3
-    ld l,a
-    ld a,5
-    ;ld (currow),hl
-    pcall(drawChar)                    ; Put the small arrow
+        add a,3
+        push af                        ; Multiply by 6 (1 row of text)
+            sla a
+            ld e, a
+        pop af
+        sla a
+        sla a
+        add a, e
+        ld e,a
+        ld a, 62                       ; >
+        pcall(drawChar)                ; Put the small arrow
     pop af
-    ld h,0x03
+    ld d, 28
     sub 6
     neg
-    ld l,a
-    ld a,32
-    ;ld (currow),hl
-    pcall(drawChar)                    ; And remove it from the other position
+    push af
+        sla a
+        ld e, a
+    pop af
+    sla a
+    sla a
+    add a, e
+    ld e, a
+    ld a, 62
+    pcall(drawCharAND)                 ; And remove it from the other position
+    pcall(fastCopy)
 WKCP:
-    pcall(getKey)
+    pcall(flushKeys)
+    corelib(appWaitKey)
     push ix \ pop hl
     push de
         ld de, players
         add hl, de
     pop de
-    cp 0x0f
+    cp kMode
     kjp(z,Quit)
-    cp 0x09
+    cp kEnter
     jr z,LevelChoose
-    cp 0x04
+    cp kUp
     jr z,ChangePlayers
-    cp 0x01
+    cp kDown
     jr z,ChangePlayers
     jr WKCP
 ChangePlayers:
@@ -271,8 +284,10 @@ ZWaitKey:
     pop de
 ShowScrFlag:
     kcall(FastPuts)                    ; Show "scrambled" or "unscrambled"
+    pcall(fastCopy)
 ZGetKey:
-    pcall(getKey)
+    pcall(flushKeys)
+    corelib(appWaitKey)
     or a
     jr z,ZGetKey
     cp 0x0f

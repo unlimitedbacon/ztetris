@@ -133,6 +133,9 @@ PutDigit:                              ; Puts digit A on the correct place
 
 ReProgStart:
     kcall(ShowFrame)                   ; Show title
+    ld de, 2 << 8 | 50                 ; X = 2, Y = 50
+    kld(hl,Coder)
+    pcall(drawStr)
     kld(hl,PlChoose)                   ; "Choose player mode"
     ld de, 15*256+18                   ; X = 15 Y = 18
     pcall(drawStr)
@@ -199,22 +202,21 @@ ChangePlayers:
     xor 3                              ; This will turn 1 -> 2 and 2 -> 1
     ld (hl),a
     jr ChoosePlayers
-OnePlayer:
-    ld (hl),1
-    jr LevelChoose
-TwoPlayers:
-    ld (hl),2
 LevelChoose:
+    ld a, (ix + players)               ; KnightOS: Disable multiplayer due to lack of link support
+    cp 2
+    jr z, ChoosePlayers
     kcall(ShowFrame)                   ; I know I used these 2x, but that's to stop the on screen trash.
     ld a,(ix+stlevel)
     ld (ix+level),a                    ; The cursor will ProgStart at the last played level
     ld a,(ix+sthigh)
     ld (ix+high),a                     ; And with the high
 NewDigit:
-    kcall(FixIt)
-    ld de,0x0C02
-    kld(hl,HighTxt)
-    kcall(FastPuts)                    ; "High"
+    ;kcall(FixIt)
+    ld de, 81 << 8 | 12
+    kld(hl,HighTxt)                    ; "High"
+    pcall(drawStr)
+    pcall(fastCopy)
     ld a,(ix+players)
     dec a                              ; Check if the hiscore should be shown
     jr nz,Show2PlayOpt                 ; or two player options
@@ -472,7 +474,7 @@ MainLoop:                              ; The main loop
 DelayLoop:
     res 1,(ix+flags)                   ; Clear the update flag
     
-    pcall(getKey)
+    corelib(appGetKey)
     cp 0x0f
     kjp(z,AbortGame)
     cp 0x37
@@ -495,6 +497,7 @@ DelayLoop:
     jr z,Rotate
 
 Wait:
+    pcall(flushKeys)                   ; KnightOS TODO: need better way of filtering key repeats
     bit 0,(ix+flags)                   ; Check if the player became gameover this frame
     kjp(nz,GameOver)
     bit 1,(ix+flags)                   ; Check if anything happened (movements)
@@ -602,7 +605,8 @@ PLoop2:
 PLoop:
     ei
     halt
-    pcall(getKey)
+    pcall(flushKeys)
+    corelib(appWaitKey)
     cp 9
     kjp(z,Wait)
     dec (hl)
@@ -816,7 +820,8 @@ GameOver:
 ;    jr z,FlashGameOver
 ;    djnz SendWinByte
 FlashGameOver:
-    pcall(getKey)
+    pcall(flushKeys)
+    corelib(appWaitKey)
     cp 0x09
     jr z,CheckHiscore
     cp 0x0f
@@ -838,7 +843,8 @@ FlashWait:
 YouWinP:
     pop hl
 YouWin:
-    pcall(getKey)
+    pcall(flushKeys)
+    corelib(appWaitKey)
     cp 0x09
     jr z,CheckHiscore
     cp 0x0f
@@ -934,7 +940,8 @@ RepClear:
 
 WaK:                                   ; A simple string input routine follows
     push hl
-    pcall(getKey)
+    pcall(flushKeys)
+    corelib(appWaitKey)
     cp 0x38
     jr z,BackSpace
     cp 0x09
@@ -1597,10 +1604,6 @@ ShowFrame:                             ; Clears the screen and shows some info
     kld(hl,Title)
     xor a                              ; Draw castle and threadlist icons
     corelib(drawWindow)
-    ;ld de, 2 << 8 | 50                 ; X = 2, Y = 50
-    ld de, 2*256+50
-    kld(hl,Coder)
-    pcall(drawStr)
     ret
 
 Quit:

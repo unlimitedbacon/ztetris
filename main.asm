@@ -216,33 +216,34 @@ NewDigit:
     ld de, 81 << 8 | 12
     kld(hl,HighTxt)                    ; "High"
     pcall(drawStr)
-    pcall(fastCopy)
     ld a,(ix+players)
     dec a                              ; Check if the hiscore should be shown
     jr nz,Show2PlayOpt                 ; or two player options
     kld(hl,Hiscore)
-    ld a,0x23
-    ld b,3
+    ld a, 38
+    ld b, 3
 NewPos:
-    ld e,0x12
-    ld d,a
+    ld d, 2
+    ld e, a
     add a,6
     push af
     push bc
-    kcall(FastVputs)                   ; Show name
-    ld a,0x46
-    ;ld (pencol),a
-    ld b,5
-    push hl
-    kcall(LD_HL_MHL)                   ; Get that persons score
-
-    kcall(DM_HL_DECI3)                 ; And show it
-    pop hl
-    inc hl
-    inc hl                             ; HL -> next hiscore table entry
+        pcall(drawStr)                 ; Show name
+        ld a,0x46
+        ld bc, 14
+        add hl, bc
+        ld b,5                         ; Show 5 digits for high scores
+        push hl
+            kcall(LD_HL_MHL)           ; Get that persons score
+            ld d, 56
+            kcall(DM_HL_DECI3)         ; And show it
+        pop hl
+        inc hl
+        inc hl                         ; HL -> next hiscore table entry
     pop bc
     pop af
     djnz NewPos
+    pcall(fastCopy)
     jr ZWaitKey
 Show2PlayOpt:
     ld de,0x0005
@@ -263,7 +264,7 @@ Show2PlayOpt:
     ld (ix+scrflag),a
 ZWaitKey:
     ;res 3,(iy+5)                      ; Not invert text
-    kcall(FixIt)
+    ;kcall(FixIt)
     ld a,(ix+level)
     ;set 3,(iy+5)                      ; Invert text
     kcall(PutDigit)                    ; Invert the ProgStarting level digit
@@ -1617,34 +1618,36 @@ Quit:
 F_DM_HL_DECI3:
     ;ld (pencol),de
 DM_HL_DECI3:                           ; Display HL in menu style with leading zeros
-    push hl
-        push ix \ pop hl
-        push de
-            ld de, string+5
-            add hl, de
-        pop de
-        ex de, hl
-    pop hl
-    xor a
-    ld (de),a
+    push de
+        push hl
+            push ix \ pop hl
+            push de
+                ld de, string+5
+                add hl, de
+            pop de
+            ex de, hl
+        pop hl
+        xor a
+        ld (de),a
 RepUnp:
-    dec de
-    push bc
-        ld c, 10
-        pcall(divHLByC)
-    pop bc
-    add a,48
-    ld (de),a
-    djnz RepUnp
-    ex de,hl
+        dec de
+        push bc
+            ld c, 10
+            pcall(divHLByC)
+        pop bc
+        add a,48
+        ld (de),a
+        djnz RepUnp
+        ex de,hl
+    pop de
     pcall(drawStr)
     ret
 
 LD_HL_MHL:
     push de
-    ld e,(hl)
-    inc hl
-    ld d,(hl)
+        ld e,(hl)
+        inc hl
+        ld d,(hl)
     pop hl
     ex de,hl
     ret

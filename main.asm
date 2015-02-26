@@ -192,6 +192,8 @@ WKCP:
     kjp(z,Quit)
     cp kEnter
     jr z,LevelChoose
+    cp k2nd
+    jr z,LevelChoose
     cp kUp
     jr z,ChangePlayers
     cp kDown
@@ -212,13 +214,31 @@ LevelChoose:
     ld a,(ix+sthigh)
     ld (ix+high),a                     ; And with the high
 NewDigit:
+    ld de, 2 << 8 | 8                  ; "Level:"
+    kld(hl,levelTxt)
+    pcall(drawStr)
     kcall(levelNums)
-    ld de, 81 << 8 | 12
+    ld de, 64 << 8 | 8
     kld(hl,HighTxt)                    ; "High"
     pcall(drawStr)
+    ld c, 7                            ; Draw box for height number
+    ld a, 64
+    ld l, 15
+    pcall(drawVLine)
+    add a, 6
+    pcall(drawVLine)
+    ld de, 64 << 8 | 14
+    ld hl, 70 << 8 | 14
+    pcall(drawLine)
+    ld e, 22
+    ld l, 22
+    pcall(drawLine)
     ld a,(ix+players)
     dec a                              ; Check if the hiscore should be shown
     jr nz,Show2PlayOpt                 ; or two player options
+    ld de, 2 << 8 | 32
+    kld(hl,hiScoresTxt)
+    pcall(drawStr)
     kld(hl,Hiscore)
     ld a, 38
     ld b, 3
@@ -269,9 +289,8 @@ ZWaitKey:
     kcall(PutDigit)                    ; Invert the ProgStarting level digit
     ;res 3,(iy+5)                      ; Not invert text
     ld a,(ix+high)
-    ld de, 81 << 8 | 18
-    add a,48
-    kcall(FastPutc)                    ; And show the High
+    ld de, 66 << 8 | 16
+    pcall(drawDecA)                    ; And show the High
     ld a,(ix+players)
     dec a                              ; If two players, the two players options
     jr z,ZGetKey                       ; should be shown as well
@@ -292,17 +311,19 @@ ZGetKey:
     corelib(appWaitKey)
     or a
     jr z,ZGetKey
-    cp 0x0f
+    cp kMode
     kjp(z,Quit)
-    cp 0x09
+    cp kEnter
     kjp(z,ProgStartGame)
-    cp 0x32
+    cp k2nd
+    kjp(z,ProgStartGame)
+    cp kMinus
     jr z,DecHigh
-    cp 0x31
+    cp kPlus
     jr z,IncHigh
-    cp 0x15                             ; Right Parentheses
+    cp kRParen                         ; Right Parentheses
     jr z,ChangeScrFlag
-    cp 0x2b
+    cp kLn
     jr nz,CheckLevChg
     ld a,(ix+players)
     dec a
@@ -1755,8 +1776,14 @@ EnterTxt:
     .db "You have a hiscore!",0
     .db "Enter your name:",0
 
+levelTxt:
+    .db "Level",0
+
 HighTxt:
-    .db "High",0
+    .db "Height",0
+
+hiScoresTxt:
+    .db "High Scores",0
 
 SLTxt:
     .db "Send 2-4 lines",0

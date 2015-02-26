@@ -212,7 +212,7 @@ LevelChoose:
     ld a,(ix+sthigh)
     ld (ix+high),a                     ; And with the high
 NewDigit:
-    ;kcall(FixIt)
+    kcall(levelNums)
     ld de, 81 << 8 | 12
     kld(hl,HighTxt)                    ; "High"
     pcall(drawStr)
@@ -243,7 +243,6 @@ NewPos:
     pop bc
     pop af
     djnz NewPos
-    pcall(fastCopy)
     jr ZWaitKey
 Show2PlayOpt:
     ld de,0x0005
@@ -264,13 +263,13 @@ Show2PlayOpt:
     ld (ix+scrflag),a
 ZWaitKey:
     ;res 3,(iy+5)                      ; Not invert text
-    ;kcall(FixIt)
+    kcall(levelNums)
     ld a,(ix+level)
     ;set 3,(iy+5)                      ; Invert text
     kcall(PutDigit)                    ; Invert the ProgStarting level digit
     ;res 3,(iy+5)                      ; Not invert text
     ld a,(ix+high)
-    ld de,0x0E03
+    ld de, 81 << 8 | 18
     add a,48
     kcall(FastPutc)                    ; And show the High
     ld a,(ix+players)
@@ -287,8 +286,8 @@ ZWaitKey:
     pop de
 ShowScrFlag:
     kcall(FastPuts)                    ; Show "scrambled" or "unscrambled"
-    pcall(fastCopy)
 ZGetKey:
+    pcall(fastCopy)
     pcall(flushKeys)
     corelib(appWaitKey)
     or a
@@ -334,11 +333,45 @@ CheckLevChg:
     jr nz,ToZWaitKey
     jr ChangeRow
 
-FixIt:
-    ld de,0x0002
-    kld(hl,PixelFixer)
-    kcall(FastPuts)
-    inc de
+levelNums:
+    ld de, 4 << 8 | 16
+    xor a
+    ld b, 5
+levelNumsLoop1:                        ; Print first row of numbers
+    pcall(drawDecA)
+    inc a
+    inc d
+    inc d
+    djnz levelNumsLoop1
+    ld de, 4 << 8 | 24
+    ld b, 5
+levelNumsLoop2:                        ; Print second row of numbers
+    pcall(drawDecA)
+    inc a
+    inc d
+    inc d
+    djnz levelNumsLoop2
+    ld c, 15
+    ld l, 15
+    ld a, 2
+    ld b, 5
+levelNumsLoop3:                        ; Draw vertical lines
+    pcall(drawVLine)
+    add a, 6
+    djnz levelNumsLoop3
+    pcall(drawVLine)
+    ld de, 2  << 8 | 14
+    ld hl, 32 << 8 | 14
+    ld a, e
+    ld b, 3
+levelNumsLoop4:
+    pcall(drawLine)
+    add a, 8
+    ld e, a
+    ld l, a
+    djnz levelNumsLoop4
+    ret
+
 FastPuts:
     ;ld (currow),de
     pcall(drawStr)
@@ -374,12 +407,10 @@ SetLevel:
     ld (ix+level),a                    ; And set the new level
     jr ToZWaitKey
 LevLeft:
-    ld a,(ix+level)
-    dec a
+    dec (ix + level)
     jr ChkLevEdges
 LevRight:
-    ld a,(ix+level)
-    inc a
+    inc (ix + level)
     jr ChkLevEdges
 
 ChangeScrFlag:
@@ -1741,10 +1772,6 @@ Letters:
     .db 0x1A,0x22,0x2A,0x0B,0x13,0x1B,0x23,0x2B,0x0C,0x14,0x1C
     .db 0x24,0x2C,0x0D,0x15,0x1D,0x25,0x2D,0x0E,0x16,0x1E,0x26
     .db 0x2E,0x1F,0x27,0x2F
-
-PixelFixer:                          ;Pixel Line Bug Fix
-    .db " 0 1 2 3 4",0
-    .db " 5 6 7 8 9",0
 
 InfoText:
     .db "Score",0

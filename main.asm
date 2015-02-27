@@ -313,7 +313,7 @@ Show2PlayOpt:
     kcall(FastPuts)                    ; "Send 2-4 lines"
     push de
     ld de,0x0006
-    kld(hl,InfoText+12)
+    kld(hl,InfoText3)
     kcall(FastPuts)                    ; "Lines "
     ;set 3,(iy+5)                      ; Invert text
     ld a,76
@@ -535,18 +535,22 @@ MainLoop:                              ; The main loop
 DelayLoop:
     res 1,(ix+flags)                   ; Clear the update flag
     
+    ; KnightOS TODO:
+    ; Figure out what to do about pausing, thread switching, teacher key, quiting
+    ; I don't like that the usual quit button (MODE) is so close to frequently used keys (2ND, ALPHA)
+    ; Enthousiastic tetris players will accidentally quit the game
     corelib(appGetKey)
-    cp 0x0f
+    cp kClear
     kjp(z,AbortGame)
-    cp 0x37
+    cp kMode
     kjp(z,Pause)
-    cp 0x36
+    cp k2nd
     kjp(z,Rotate)
-    cp 0x30
+    cp kAlpha
     kjp(z,RotateBack)
-    cp 0x38
+    cp kDel
     kjp(z,TeacherKey)
-    cp 0x28
+    cp kXTThetaN
     kjp(z,Drop)
     dec a
     jr z,MoveDown
@@ -653,13 +657,15 @@ TeacherKey:
     kjp(Quit)
 
 Pause:
+    ; KnightOS TODO:
+    ; Fix Pause screen
     ld a,(ix+players)
     dec a
     kjp(nz,Wait)                       ; Pause not allowed in two player game
     kcall(ShowFrame)
     ld de,0x0404
     kld(hl,PauseTxt)
-    kcall(FastPuts)                    ; "* PAUSE *"
+    pcall(drawStr)                     ; "* PAUSE *"
     ld b,24
 PLoop2:
     ld (hl),0xFF
@@ -679,9 +685,11 @@ PLoop:
     or a
     jr nz,PLoop2
 PsuedoAPD:
+    ; KnightOS TODO:
+    ; This is scary
     DI                                 ; disable interrupts
     LD A,0x01
-    OUT (0x03),A                        ; turn off screen
+    OUT (0x03),A                       ; turn off screen
     EX AF,AF'
     EXX
     EI                                 ; enable interrupts
@@ -881,6 +889,8 @@ GameOver:
 ;    jr z,FlashGameOver
 ;    djnz SendWinByte
 FlashGameOver:
+    ; KnightOS TODO:
+    ; Fix Game Over screen
     pcall(flushKeys)
     corelib(appWaitKey)
     cp 0x09
@@ -904,6 +914,9 @@ FlashWait:
 YouWinP:
     pop hl
 YouWin:
+    ; KnightOS TODO:
+    ; Fix Winning screen
+    ; I think this is just for multiplayer
     pcall(flushKeys)
     corelib(appWaitKey)
     cp 0x09
@@ -978,6 +991,9 @@ EnterName:
     push hl
     ld b,10
 RepClear:
+    ; KnightOS TODO:
+    ; Fix name entry screen
+    ; Probably use that thing from corelib
     ld (hl),32                         ; Clear the previous name
     inc hl
     djnz RepClear
@@ -1295,25 +1311,25 @@ CreateNew:
 NotDead:
     kjp(ShowCurB)                      ; Show the current piece
 ShowInfo:                              ; Updates score, level and lives
-    ;set 7, (iy+0x14)                  ; write text to graph buffer (plotSScreen)
+    ; KnightOS TODO:
+    ; Blank areas before drawing text
     push ix \ pop hl
     ld de, score
     add hl, de
-    ld de,0x070C
+    ld de, 12 << 8 | 8
     kcall(LD_HL_MHL)
     ld b,5
     kcall(F_DM_HL_DECI3)
-    ld de,0x1918
+    ld de, 24 << 8 | 26
     ld l,(ix+level)
     ld h,0
     ld b,2
     kcall(F_DM_HL_DECI3)
-    ld de,0x2B13
+    ld de, 20 << 8 | 44
     ld l,(ix+lines)
     ld h,0
     ld b,3
     kcall(F_DM_HL_DECI3)
-    ;res 7, (iy+0x14)                  ; write text directly to display
     ret
 CreateNewPiece:
     push ix \ pop hl                   ; Remove the next piece
@@ -1508,17 +1524,17 @@ RMul:
     ret
 
 ShowLayout:                            ; Shows the game layout
-    ;set 7, (iy+0x14)                   ; write text to graph buffer (plotSScreen)
     push de
-    ld de,0x000C
-    kld(hl,InfoText)
-    kcall(FastVputs)
-    ld de,0x120C
-    kcall(FastVputs)
-    ld de,0x240C
-    kcall(FastVputs)
+        ld de, 12 << 8 | 1
+        kld(hl,InfoText1)
+        pcall(drawStr)
+        ld de, 12 << 8 | 19
+        kld(hl,InfoText2)
+        pcall(drawStr)
+        ld de, 12 << 8 | 37
+        kld(hl,InfoText3)
+        pcall(drawStr)
     pop de
-    ;res 7, (iy+0x14)                   ; write text directly to display
 GFXNewRow:
     ld de,12
     ld b,64
@@ -1808,9 +1824,11 @@ Letters:
     .db 0x24,0x2C,0x0D,0x15,0x1D,0x25,0x2D,0x0E,0x16,0x1E,0x26
     .db 0x2E,0x1F,0x27,0x2F
 
-InfoText:
+InfoText1:
     .db "Score",0
+InfoText2:
     .db "Level",0
+InfoText3:
     .db "Lines",0
 Pattern:                             ; Pattern for each level
     .db 0xAA,0x55,0xAA,0x55,0xAA,0x55,0xAA,0x55

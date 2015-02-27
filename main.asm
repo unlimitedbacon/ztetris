@@ -113,22 +113,65 @@ start:
 ; This function inverts the level number when selecting a level
 ; Rewrite it to invert a block of the screen determined by A (0 through 9)
 PutDigit:                              ; Puts digit A on the correct place
-;    push af                            ; Used when choosing ProgStart level
-;    ld l,2
-;    cp 5
-;    jr c,FirstRow
-;    inc l
-;    sub 5
-;FirstRow:
-;    add a,a
-;    inc a
-;    ld h,a
-;    ld (currow),hl
-;    pop af
-;    push af
-;    add a,48
-;    pcall(drawChar)                       ; display # in a
-;    pop af
+    push af                            ; Used when choosing ProgStart level
+    push bc
+        ld l, 15
+        ld b, a
+        inc b
+        cp 5
+        jr c, FirstRow
+        ld l, 23
+        sub 5
+        ld b, a
+        inc b
+FirstRow:
+        add a, 5
+        djnz FirstRow
+        add a, 10
+        ld e, a
+        ld bc, 7 << 8 | 5
+        pcall(rectXOR)
+    pop bc
+    pop af
+    ret
+
+levelNums:
+    ld de, 16 << 8 | 16
+    xor a
+    ld b, 5
+levelNumsLoop1:                        ; Print first row of numbers
+    pcall(drawDecA)
+    inc a
+    inc d
+    inc d
+    djnz levelNumsLoop1
+    ld de, 16 << 8 | 24
+    ld b, 5
+levelNumsLoop2:                        ; Print second row of numbers
+    pcall(drawDecA)
+    inc a
+    inc d
+    inc d
+    djnz levelNumsLoop2
+    ld c, 15
+    ld l, 15
+    ld a, 14
+    ld b, 5
+levelNumsLoop3:                        ; Draw vertical lines
+    pcall(drawVLine)
+    add a, 6
+    djnz levelNumsLoop3
+    pcall(drawVLine)
+    ld de, 14 << 8 | 14
+    ld hl, 44 << 8 | 14
+    ld a, e
+    ld b, 3
+levelNumsLoop4:
+    pcall(drawLine)
+    add a, 8
+    ld e, a
+    ld l, a
+    djnz levelNumsLoop4
     ret
 
 ReProgStart:
@@ -214,36 +257,36 @@ LevelChoose:
     ld a,(ix+sthigh)
     ld (ix+high),a                     ; And with the high
 NewDigit:
-    ld de, 2 << 8 | 8                  ; "Level:"
+    ld de, 14 << 8 | 8                 ; "Level:"
     kld(hl,levelTxt)
     pcall(drawStr)
     kcall(levelNums)
-    ld de, 64 << 8 | 8
-    kld(hl,HighTxt)                    ; "High"
+    ld de, 63 << 8 | 14
+    kld(hl,HighTxt)                    ; "Height"
     pcall(drawStr)
     ld c, 7                            ; Draw box for height number
-    ld a, 64
-    ld l, 15
+    ld a, 63
+    ld l, 21
     pcall(drawVLine)
     add a, 6
     pcall(drawVLine)
-    ld de, 64 << 8 | 14
-    ld hl, 70 << 8 | 14
+    ld de, 63 << 8 | 20
+    ld hl, 69 << 8 | 20
     pcall(drawLine)
-    ld e, 22
-    ld l, 22
+    ld e, 28
+    ld l, 28
     pcall(drawLine)
     ld a,(ix+players)
     dec a                              ; Check if the hiscore should be shown
     jr nz,Show2PlayOpt                 ; or two player options
-    ld de, 2 << 8 | 32
+    ld de, 14 << 8 | 32
     kld(hl,hiScoresTxt)
     pcall(drawStr)
     kld(hl,Hiscore)
     ld a, 38
     ld b, 3
 NewPos:
-    ld d, 2
+    ld d, 14
     ld e, a
     add a,6
     push af
@@ -255,7 +298,7 @@ NewPos:
         ld b,5                         ; Show 5 digits for high scores
         push hl
             kcall(LD_HL_MHL)           ; Get that persons score
-            ld d, 56
+            ld d, 63
             kcall(DM_HL_DECI3)         ; And show it
         pop hl
         inc hl
@@ -289,7 +332,7 @@ ZWaitKey:
     kcall(PutDigit)                    ; Invert the ProgStarting level digit
     ;res 3,(iy+5)                      ; Not invert text
     ld a,(ix+high)
-    ld de, 66 << 8 | 16
+    ld de, 65 << 8 | 22
     pcall(drawDecA)                    ; And show the High
     ld a,(ix+players)
     dec a                              ; If two players, the two players options
@@ -354,45 +397,6 @@ CheckLevChg:
     jr nz,ToZWaitKey
     jr ChangeRow
 
-levelNums:
-    ld de, 4 << 8 | 16
-    xor a
-    ld b, 5
-levelNumsLoop1:                        ; Print first row of numbers
-    pcall(drawDecA)
-    inc a
-    inc d
-    inc d
-    djnz levelNumsLoop1
-    ld de, 4 << 8 | 24
-    ld b, 5
-levelNumsLoop2:                        ; Print second row of numbers
-    pcall(drawDecA)
-    inc a
-    inc d
-    inc d
-    djnz levelNumsLoop2
-    ld c, 15
-    ld l, 15
-    ld a, 2
-    ld b, 5
-levelNumsLoop3:                        ; Draw vertical lines
-    pcall(drawVLine)
-    add a, 6
-    djnz levelNumsLoop3
-    pcall(drawVLine)
-    ld de, 2  << 8 | 14
-    ld hl, 32 << 8 | 14
-    ld a, e
-    ld b, 3
-levelNumsLoop4:
-    pcall(drawLine)
-    add a, 8
-    ld e, a
-    ld l, a
-    djnz levelNumsLoop4
-    ret
-
 FastPuts:
     ;ld (currow),de
     pcall(drawStr)
@@ -404,7 +408,7 @@ DecHigh:
     jr z,ZGetKey                       ; Don't decrease if high is 0
     dec a
     ld (ix+high),a
-    jr ToZWaitKey
+    kjp(ZWaitKey)
 
 IncHigh:
     ld a,(ix+high)
@@ -412,7 +416,7 @@ IncHigh:
     jr z,ZGetKey                       ; Don't increase if high is 5
     inc a
     ld (ix+high),a
-    jr ToZWaitKey
+    kjp(ZWaitKey)
 
 ChangeRow:
     ld a,(ix+level)
@@ -426,19 +430,23 @@ SetLevel:
     kcall(PutDigit)                    ; Remove the inverted digit
     ld a,b
     ld (ix+level),a                    ; And set the new level
-    jr ToZWaitKey
+    kjp(ZWaitKey)
 LevLeft:
-    dec (ix + level)
+    ;dec (ix + level)
+    ld a,(ix+level)
+    dec a
     jr ChkLevEdges
 LevRight:
-    inc (ix + level)
+    ;inc (ix + level)
+    ld a,(ix+level)
+    inc a
     jr ChkLevEdges
 
 ChangeScrFlag:
     ld a, 1
     xor (ix+scrflag)
     ld (ix+scrflag), a
-    jr ToZWaitKey
+    kjp(ZWaitKey)
 
 ProgStartGame:
     ld a,(ix+level)

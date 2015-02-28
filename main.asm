@@ -317,10 +317,10 @@ Show2PlayOpt:
     kcall(FastPuts)                    ; "Lines "
     ;set 3,(iy+5)                      ; Invert text
     ld a,76
-    kcall(FastPutc)                    ; Invert the 'S'
+    pcall(drawChar)                    ; Invert the 'S'
     pop de
     ld a,83
-    kcall(FastPutc)                    ; And the 'L'
+    pcall(drawChar)                    ; And the 'L'
     xor a
     ld (ix+declines),a                 ; Clear the flags to the two option above
     ld (ix+scrflag),a
@@ -873,10 +873,33 @@ AbortGame:
     kjp(z,CheckHiscore)                ; If one player abort, check hiscore table
 
 GameOver:
+    pcall(flushKeys)
+    ; Draw box
+    ld de, 29 << 8 | 27
+    ld hl, 66 << 8 | 27
+    pcall(drawLine)
+    ld e, 35
+    ld l, 35
+    pcall(drawLine)
+    ld a, 29
+    ld l, 28
+    ld c, 7
+    pcall(drawVLine)
+    add a, 37
+    pcall(drawVLine)
+    ; Clear area
+    ld bc, 7 << 8 | 36
+    ld e, 30
+    ld l, 28
+    pcall(rectAND)
+    ; Draw text
+    ld de, 31 << 8 | 29
+    kld(hl,GameOverText)
+    pcall(drawStr)
     ld a,(ix+players)
     dec a
     jr z,FlashGameOver                 ; If a two player game, send a byte telling
-    ld a,0xC0                           ; that you lost
+    ld a,0xC0                          ; that you lost
     ld b,3
 ; Networking disabled
 ;SendWinByte:
@@ -889,21 +912,16 @@ GameOver:
 ;    jr z,FlashGameOver
 ;    djnz SendWinByte
 FlashGameOver:
-    ; KnightOS TODO:
-    ; Fix Game Over screen
-    pcall(flushKeys)
-    corelib(appWaitKey)
-    cp 0x09
+    corelib(appGetKey)
+    cp kEnter
     jr z,CheckHiscore
-    cp 0x0f
+    cp k2nd
     jr z,CheckHiscore
-    ;ld a,(iy+5)                       ; Invert textFlags
-    ;xor 8
-    ;ld (iy+5),a
     pcall(fastCopy)
-    ld de,0x0303
-    kld(hl,GameOverText)
-    kcall(FastPuts)
+    ld bc, 7 << 8 | 36
+    ld e, 30
+    ld l, 28
+    pcall(rectXOR)
     ei
     ld b,20
 FlashWait:
@@ -1006,12 +1024,11 @@ RepClear:
     kcall(ShowFrame)
     ld de,0x1211
     kld(hl,EnterTxt)
-    kcall(FastVputs)                   ; "You entered ..."
+    pcall(drawStr)                     ; "You entered ..."
     ld de,0x1915
-    ;ld (pencol),de
-    kcall(FastVputs)                   ; "Enter your name"
+    pcall(drawStr)                     ; "Enter your name"
     ld hl,0x0305
-    ;ld (currow),hl
+    pcall(fastCopy)
     pop hl
     ld b,0                             ; B = number of letters entered so far
 
@@ -1019,11 +1036,11 @@ WaK:                                   ; A simple string input routine follows
     push hl
     pcall(flushKeys)
     corelib(appWaitKey)
-    cp 0x38
+    cp kDel
     jr z,BackSpace
-    cp 0x09
+    cp kEnter
     jr z,NameDone
-    cp 0x11
+    cp kSpace
     jr nz,CheckLetter
     ld a,32
     pop hl
@@ -1331,19 +1348,19 @@ ShowInfo:                              ; Updates score, level and lives
     ld de, 12 << 8 | 8
     kcall(LD_HL_MHL)
     ld b,5
-    kcall(F_DM_HL_DECI3)
+    kcall(DM_HL_DECI3)
     ; Print level
     ld de, 24 << 8 | 26
     ld l,(ix+level)
     ld h,0
     ld b,2
-    kcall(F_DM_HL_DECI3)
+    kcall(DM_HL_DECI3)
     ; Print lines
     ld de, 20 << 8 | 44
     ld l,(ix+lines)
     ld h,0
     ld b,3
-    kcall(F_DM_HL_DECI3)
+    kcall(DM_HL_DECI3)
     ret
 CreateNewPiece:
     push ix \ pop hl                   ; Remove the next piece
@@ -1503,7 +1520,6 @@ GetBlockOfs:                           ; Finds out where on the screen H,L is
     ld d,0
     ld e,a
     add hl,de
-    ;kld(de,GRAPH_MEM)
     push iy \ pop de
     add hl,de
     ld b,4
@@ -1518,6 +1534,8 @@ OffScreen:
      xor a
      ret
 
+; KnightOS TODO:
+; Replace with better RNG
 PRandom:                               ; Creates a pseudorandom number 0 <= x < A
     push bc
     push de
@@ -1682,15 +1700,6 @@ RepPut:
     jr nz,SWNewRow
     ret
 
-FastVputs:
-    ;ld (pencol),de
-    pcall(drawStr)
-    ret
-FastPutc:
-    ;ld (currow),de
-    pcall(drawChar)
-    ret
-
 ShowFrame:                             ; Clears the screen and shows some info
     kld(hl,Title)
     xor a                              ; Draw castle and threadlist icons
@@ -1705,8 +1714,6 @@ Quit:
     ;pcall(_cleargbuf)
     ret
 
-F_DM_HL_DECI3:
-    ;ld (pencol),de
 DM_HL_DECI3:                           ; Display HL in menu style with leading zeros
     push de
         push hl
@@ -1799,7 +1806,7 @@ PlChoose2:
     .db "2 players",0
 
 GameOverText:
-    .db " Game Over ",0
+    .db "Game Over",0
 
 WinTxt:
     .db " You Win ",0

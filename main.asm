@@ -1007,84 +1007,25 @@ MoveDone:
     add hl,de
 EnterName:
     push hl
-    ld b,10
+        ld b,10
 RepClear:
-    ; KnightOS TODO:
-    ; Fix name entry screen
-    ; Probably use that thing from corelib
-    ld (hl),32                         ; Clear the previous name
-    inc hl
-    djnz RepClear
-    inc hl
-    ld d, (ix+score+1)
-    ld e, (ix+score)
-    ld (hl),e                          ; Put your score in the table
-    inc hl
-    ld (hl),d
-    kcall(ShowFrame)
-    ld de,0x1211
-    kld(hl,EnterTxt)
-    pcall(drawStr)                     ; "You entered ..."
-    ld de,0x1915
-    pcall(drawStr)                     ; "Enter your name"
-    ld hl,0x0305
-    pcall(fastCopy)
+        ld (hl),32                         ; Clear the previous name
+        inc hl
+        djnz RepClear
+        inc hl
+        ld d, (ix+score+1)
+        ld e, (ix+score)
+        ld (hl),e                          ; Put your score in the table
+        inc hl
+        ld (hl),d
     pop hl
-    ld b,0                             ; B = number of letters entered so far
-
-WaK:                                   ; A simple string input routine follows
-    push hl
-    pcall(flushKeys)
-    corelib(appWaitKey)
-    cp kDel
-    jr z,BackSpace
-    cp kEnter
-    jr z,NameDone
-    cp kSpace
-    jr nz,CheckLetter
-    ld a,32
-    pop hl
-    jr PutLetter
-CheckLetter:
-    kld(hl,Letters)
-    push bc
-    ld bc,26
-    cpir
-    ld d,c
-    pop bc
-    pop hl
-    jr nz,WaK
-    ld a,65
-    add a,d
-PutLetter:
-    ld c,a
-    ld a,b
-    cp 10
-    jr z,WaK
-    ld (hl),c
-    inc hl
-    inc b
-    ld a,c
-    pcall(drawChar)
-    jr WaK
-BackSpace:
-    pop hl
-    ld a,b
-    or a
-    jr z,WaK
-    dec b
-    dec hl
-    push hl
-    ld (hl),32
-    ;kld(hl,curcol)
-    dec (hl)
-    ld a,32
-    pcall(drawChar)
-    dec (hl)
-    pop hl
-    jr WaK
-NameDone:
-    pop hl
+    ; Ask for name
+    push ix
+        push hl \ pop ix
+        kld(hl,EnterTxt)
+        ld bc, 10
+        corelib(promptString)
+    pop ix
     kjp(LevelChoose)
 
 CheckBar:                              ; Find out how it goes for ya
@@ -1705,7 +1646,8 @@ ShowFrame:                             ; Clears the screen and shows some info
     xor a                              ; Draw castle and threadlist icons
     corelib(drawWindow)
     ret
-
+; KnightOS TODO:
+; This function can probably be removed
 Quit:
     ;set 6,(iy+9)                      ; Restore the StatVars, to avoid screen garbage
     ;set 1,(iy+13)                     ; Same with TextShadow

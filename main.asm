@@ -1311,8 +1311,20 @@ CreateNew:
 NotDead:
     kjp(ShowCurB)                      ; Show the current piece
 ShowInfo:                              ; Updates score, level and lives
-    ; KnightOS TODO:
     ; Blank areas before drawing text
+    ld bc, 5 << 8 | 20
+    ld e, 12
+    ld l, 8
+    pcall(rectAND)
+    ld bc, 5 << 8 | 8
+    ld e, 24
+    ld l, 26
+    pcall(rectAND)
+    ld bc, 5 << 8 | 12
+    ld e, 20
+    ld l, 44
+    pcall(rectAND)
+    ; Print score
     push ix \ pop hl
     ld de, score
     add hl, de
@@ -1320,11 +1332,13 @@ ShowInfo:                              ; Updates score, level and lives
     kcall(LD_HL_MHL)
     ld b,5
     kcall(F_DM_HL_DECI3)
+    ; Print level
     ld de, 24 << 8 | 26
     ld l,(ix+level)
     ld h,0
     ld b,2
     kcall(F_DM_HL_DECI3)
+    ; Print lines
     ld de, 20 << 8 | 44
     ld l,(ix+lines)
     ld h,0

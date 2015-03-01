@@ -25,7 +25,6 @@ description:
 corelibPath:
     .db "/lib/core", 0
 
-; TODO: make all references to these variables offsets from IX
 ; 2 byte variables are stored little-endian (i.e. reverse order of registers)
 cBitOfs   .equ 0       ;* WORD
 cBit      .equ 2       ;* 4 BYTE
@@ -67,8 +66,6 @@ start:
     ; KnightOS:
     ; TIOS stores system flags in IY+offset
     ; we don't need this so we can reclaim IY for the screen buffer
-    ;res 1,(iy+13)                     ; Disable saving characters in textShadow ;VERY IMPORTANT, because i am using TXTSHADOW to replace TEXT_MEM
-    ;res 6,(iy+9)                      ; Stats are invalid                       ;VERY IMPORTANT since I am using the STATVARS. Thanks SCaBBY!
     pcall(getLcdLock)
     pcall(getKeypadLock)
     kld(de,corelibPath)
@@ -109,9 +106,7 @@ start:
 ;    kjp(MainLoop)
     jr ReProgStart
 
-; KnightOS TODO:
-; This function inverts the level number when selecting a level
-; Rewrite it to invert a block of the screen determined by A (0 through 9)
+; Invert selected level
 PutDigit:                              ; Puts digit A on the correct place
     push af                            ; Used when choosing ProgStart level
     push bc
@@ -308,13 +303,15 @@ NewPos:
     djnz NewPos
     jr ZWaitKey
 Show2PlayOpt:
+    ; KnightOS TODO:
+    ; Fix drawing 2 player options
     ld de,0x0005
     kld(hl,SLTxt)
-    kcall(FastPuts)                    ; "Send 2-4 lines"
+    pcall(drawStr)                     ; "Send 2-4 lines"
     push de
     ld de,0x0006
     kld(hl,InfoText3)
-    kcall(FastPuts)                    ; "Lines "
+    pcall(drawStr)                     ; "Lines "
     ;set 3,(iy+5)                      ; Invert text
     ld a,76
     pcall(drawChar)                    ; Invert the 'S'
@@ -325,12 +322,9 @@ Show2PlayOpt:
     ld (ix+declines),a                 ; Clear the flags to the two option above
     ld (ix+scrflag),a
 ZWaitKey:
-    ;res 3,(iy+5)                      ; Not invert text
     kcall(levelNums)
     ld a,(ix+level)
-    ;set 3,(iy+5)                      ; Invert text
     kcall(PutDigit)                    ; Invert the ProgStarting level digit
-    ;res 3,(iy+5)                      ; Not invert text
     ld a,(ix+high)
     ld de, 65 << 8 | 22
     pcall(drawDecA)                    ; And show the High
@@ -347,7 +341,7 @@ ZWaitKey:
     add hl,de
     pop de
 ShowScrFlag:
-    kcall(FastPuts)                    ; Show "scrambled" or "unscrambled"
+    pcall(drawStr)                     ; Show "scrambled" or "unscrambled"
 ZGetKey:
     pcall(fastCopy)
     pcall(flushKeys)
@@ -383,7 +377,7 @@ ZGetKey:
     ld e,a
     add hl,de
     pop de
-    kcall(FastPuts)                    ; Update it on the screen
+    pcall(drawStr)                     ; Update it on the screen
 ToZWaitKey:                            ; This label is to avoid JPs below (saves a few bytes)
     jr ZWaitKey
 CheckLevChg:
@@ -396,11 +390,6 @@ CheckLevChg:
     dec a
     jr nz,ToZWaitKey
     jr ChangeRow
-
-FastPuts:
-    ;ld (currow),de
-    pcall(drawStr)
-    ret
 
 DecHigh:
     ld a,(ix+high)
@@ -432,12 +421,10 @@ SetLevel:
     ld (ix+level),a                    ; And set the new level
     kjp(ZWaitKey)
 LevLeft:
-    ;dec (ix + level)
     ld a,(ix+level)
     dec a
     jr ChkLevEdges
 LevRight:
-    ;inc (ix + level)
     ld a,(ix+level)
     inc a
     jr ChkLevEdges
@@ -451,7 +438,7 @@ ChangeScrFlag:
 ProgStartGame:
     ld a,(ix+level)
     ld (ix+stlevel),a                  ; Copy the selected level and high so they will
-    ld a,(ix+high)                        ; be default next time
+    ld a,(ix+high)                     ; be default next time
     ld (ix+sthigh),a
     ld a,(ix+players)
     dec a
@@ -463,7 +450,7 @@ ProgStartGame:
     ;kcall(ShowFrame)
     ;ld de,0x0304
     ;kld(hl,WaitTxt)
-    ;kcall(FastPuts)                    ; "* WAITING *"
+    ;pcall(drawStr)                     ; "* WAITING *"
 
     ;kcall(ReceiveByte)
     ;or a
@@ -657,43 +644,66 @@ TeacherKey:
     kjp(Quit)
 
 Pause:
-    ; KnightOS TODO:
-    ; Fix Pause screen
     ld a,(ix+players)
     dec a
     kjp(nz,Wait)                       ; Pause not allowed in two player game
-    kcall(ShowFrame)
-    ld de,0x0404
+    ; KnightOS TODO:
+    ; This and the similar code in GameOver should be turned into a function
+    ; Draw box
+    ld de, 32 << 8 | 27
+    ld hl, 64 << 8 | 27
+    pcall(drawLine)
+    ld e, 35
+    ld l, 35
+    pcall(drawLine)
+    ld a, 32
+    ld l, 28
+    ld c, 7
+    pcall(drawVLine)
+    add a, 32
+    pcall(drawVLine)
+    ; Clear area
+    ld bc, 7 << 8 | 31
+    ld e, 33
+    ld l, 28
+    pcall(rectAND)
+    ; Draw text
+    ld de, 34 << 8 | 29
     kld(hl,PauseTxt)
     pcall(drawStr)                     ; "* PAUSE *"
-    ld b,24
+    pcall(fastCopy)
+    ;ld b,24
 PLoop2:
-    ld (hl),0xFF
+    ;ld (hl),0xFF
 PLoop:
-    ei
-    halt
+    ;ei
+    ;halt
     pcall(flushKeys)
     corelib(appWaitKey)
     cp 9
-    kjp(z,Wait)
-    dec (hl)
-    xor a
-    or (hl)                            ; Make  HL activate Z-Flag
-    jr nz,PLoop
-    ld a,b
-    dec b
-    or a
-    jr nz,PLoop2
-PsuedoAPD:
+    jr nz, PLoop
     ; KnightOS TODO:
-    ; This is scary
-    DI                                 ; disable interrupts
-    LD A,0x01
-    OUT (0x03),A                       ; turn off screen
-    EX AF,AF'
-    EXX
-    EI                                 ; enable interrupts
-    jr Pause
+    ; Redraw game grid
+    kjp(Wait)
+    ; KnightOS:
+    ; The following seems to be a timer that shuts off the calc after a while
+    ; Disabled because this should be handled by the OS
+;    dec (hl)
+;    xor a
+;    or (hl)                            ; Make  HL activate Z-Flag
+;    jr nz,PLoop
+;    ld a,b
+;    dec b
+;    or a
+;    jr nz,PLoop2
+;PsuedoAPD:
+;    DI                                 ; disable interrupts
+;    LD A,0x01
+;    OUT (0x03),A                       ; turn off screen
+;    EX AF,AF'
+;    EXX
+;    EI                                 ; enable interrupts
+;    jr Pause
 
 ShowBar:                               ; Show the bar
     ld (ix+lastbar),a
@@ -947,7 +957,7 @@ YouWin:
     pcall(fastCopy)
     ld de,0x0403
     kld(hl,WinTxt)
-    kcall(FastPuts)
+    pcall(drawStr)
     ei
     ld b,20
 WFlashWait:
@@ -1761,7 +1771,7 @@ WaitTxt:
 
 EnterTxt:
     .db "You have a hiscore!",0
-    .db "Enter your name:",0
+    ;.db "Enter your name:",0
 
 levelTxt:
     .db "Level",0

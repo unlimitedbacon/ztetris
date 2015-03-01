@@ -1,8 +1,3 @@
-; If you make any changes to the source, please tell me what and why.
-; And you are NOT allowed to distribute a modified source, nor the
-; compiled version of it. Any changes should be made for personal use only.
-; original by: Jimmy Mardell <mja@algonet.se>
-
 #include "kernel.inc"
 #include "corelib.inc"
     .db "KEXC"
@@ -161,7 +156,7 @@ levelNumsLoop3:                        ; Draw vertical lines
     ld hl, 44 << 8 | 14
     ld a, e
     ld b, 3
-levelNumsLoop4:
+levelNumsLoop4:                        ; Draw horizontal lines
     pcall(drawLine)
     add a, 8
     ld e, a
@@ -217,8 +212,8 @@ ChoosePlayers:
     ld e, a
     ld a, 62
     pcall(drawCharAND)                 ; And remove it from the other position
-    pcall(fastCopy)
 WKCP:
+    pcall(fastCopy)
     pcall(flushKeys)
     corelib(appWaitKey)
     push ix \ pop hl
@@ -321,8 +316,8 @@ Show2PlayOpt:
     xor a
     ld (ix+declines),a                 ; Clear the flags to the two option above
     ld (ix+scrflag),a
-ZWaitKey:
     kcall(levelNums)
+ZWaitKey:
     ld a,(ix+level)
     kcall(PutDigit)                    ; Invert the ProgStarting level digit
     ld a,(ix+high)
@@ -388,7 +383,7 @@ CheckLevChg:
     dec a
     jr z,LevRight
     dec a
-    jr nz,ToZWaitKey
+    kjp(nz,ZGetKey)
     jr ChangeRow
 
 DecHigh:
@@ -689,8 +684,11 @@ PLoop2:
 PLoop:
     ;ei
     ;halt
+    pcall(fastCopy)
     pcall(flushKeys)
     corelib(appWaitKey)
+    ; KnightOS TODO:
+    ; Switch either change key map (unpause with 2nd or Mode) or change to use a dialog box
     cp 9
     jr nz, PLoop
     ; KnightOS TODO:

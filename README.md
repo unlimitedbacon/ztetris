@@ -1,6 +1,10 @@
 # ZTetris
 
-The best TI-83+ Tetris ported to KnightOS.
+The best TI-83+ Tetris ported to [KnightOS](http://www.knightos.org/).
+
+![Screenshot 1](http://a.pomf.se/rnltvq.png)
+![Screenshot 2](http://a.pomf.se/udfteg.png)
+![Screenshot 3](http://a.pomf.se/zxgkgj.png)
 
 [Original](http://www.ticalc.org/archives/files/fileinfo/94/9489.html) by Jimmy Mårdell  <yarin@acc.umu.se>
 Sam Heald <evil_sam@hotmail.com>

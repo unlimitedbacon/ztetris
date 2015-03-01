@@ -484,7 +484,7 @@ InitRow:                               ; Setting up the border aroudn the well
     djnz InitRow
 
     kcall(ShowLayout)
-    ld (ix+linkcnt),10                 ; This counter decrease every frame. When 0,
+    ;ld (ix+linkcnt),10                 ; This counter decrease every frame. When 0,
     ld a,(ix+players)                  ; check link port. If too often check, it slows down
     dec a
     ld a,0                             ; Can't use 'xor a' here! It would affect the Z flag
@@ -498,6 +498,7 @@ ResetVars:
     ld (ix+score+1), a
     ld (ix+score), a
     kcall(NewB)                        ; Prepares a new piece
+    pcall(fastCopy)
     ld a,(ix+high)
     or a
     jr z,MainLoop
@@ -510,6 +511,7 @@ ResetVars:
     pop hl
     pop bc
     ld (ix+scrflag),b                  ; And reset the scrflag
+    pcall(fastCopy)
 
 MainLoop:                              ; The main loop
     kld(hl,LevelCnts)
@@ -523,9 +525,16 @@ DelayLoop:
     res 1,(ix+flags)                   ; Clear the update flag
     
     ; KnightOS TODO:
-    ; Figure out what to do about pausing, thread switching, teacher key, quiting
-    ; I don't like that the usual quit button (MODE) is so close to frequently used keys (2ND, ALPHA)
-    ; Enthousiastic tetris players will accidentally quit the game
+    ; This delay is a crappy fix for the screwed up timing.
+    ; I have no idea why the timing is screwed up in the first place.
+    ; Anyways, a comparison should be done with the TIOS version to make sure everything is roughly in sync
+    ld bc,35000
+dwait2:
+    dec bc
+    ld a,b
+    or c
+    jr nz,dwait2
+
     corelib(appGetKey)
     cp kClear
     kjp(z,AbortGame)
@@ -549,29 +558,28 @@ DelayLoop:
     jr z,Rotate
 
 Wait:
-    pcall(flushKeys)                   ; KnightOS TODO: need better way of filtering key repeats
     bit 0,(ix+flags)                   ; Check if the player became gameover this frame
     kjp(nz,GameOver)
     bit 1,(ix+flags)                   ; Check if anything happened (movements)
     kcall(nz,Update)                   ; If so, update that
 
-    ld bc,3200
+    ;ld bc,3200
+    ld bc, 800
 dwait:
     dec bc
     ld a,b
     or c
     jr nz,dwait
-    pcall(fastCopy)
     
-    dec (ix+linkcnt)
-    kcall(z,GetLinkInfo)               ; If the link counter reaches zero, check link port
+    ;dec (ix+linkcnt)
+    ;kcall(z,GetLinkInfo)               ; If the link counter reaches zero, check link port
     dec (ix+counter)                   ; Decrease the counter
     jr nz,DelayLoop                    ; If not zero, check for keys again
     jr FallDown
 MoveDown:
     inc (ix+scoreU)                    ; When DOWN is pressed, increase the score
 FallDown:
-    kcall(GetLinkInfo)                 ; Before moving down, always check linkport
+    ;kcall(GetLinkInfo)                 ; Before moving down, always check linkport
     dec (ix+newXY)                     ; Decrease the y coordinate
     kcall(Update)                      ; Check if possible
     kjp(z,MainLoop)                    ; If so, repeat mainloop
@@ -595,6 +603,7 @@ StoreB:                                ; Store the piece in the well
     dec a
     kcall(nz,CheckBar)                 ; If two player, check your highest line
     kcall(NewB)                        ; Last, randomize a new piece
+    pcall(fastCopy)
     kjp(MainLoop)
 
 MoveRight:
@@ -620,9 +629,11 @@ Drop:                                  ; When dropping, increase score with the
     dec (ix+newXY)                     ; Decrease Y coordinate
     kcall(Update)                      ; Update it on screen
     jr z,Drop                          ; If OK, move down again
-    kcall(GetLinkInfo)                 ; Get link info
+    ;kcall(GetLinkInfo)                 ; Get link info
     jr BotReached                      ; Bottom reached, store piece.
 
+; KnightOS TODO:
+; Make this pause and switch to the castle
 TeacherKey:
     ld a,(ix+players)
     dec a
@@ -684,6 +695,7 @@ PLoop:
     jr nz, PLoop
     ; KnightOS TODO:
     ; Redraw game grid
+    ; and add context switch above
     kjp(Wait)
     ; KnightOS:
     ; The following seems to be a timer that shuts off the calc after a while
@@ -707,7 +719,6 @@ PLoop:
 
 ShowBar:                               ; Show the bar
     ld (ix+lastbar),a
-    ;kld(hl,GRAPH_MEM + (63 * 12) + 11)
     push iy \ pop hl
     ld de, (63 * 12) + 11
     add hl, de
@@ -828,20 +839,21 @@ Update:                                ; Update the piece on the screen.
     xor a
 Sync:
     push af
-    ld h, (ix+cXY+1)
-    ld l, (ix+cXY)
-    ld (ix+newXY+1), h
-    ld (ix+newXY), l
-    ld a,(ix+cRot)
-    ld (ix+newRot),a
+        ld h, (ix+cXY+1)
+        ld l, (ix+cXY)
+        ld (ix+newXY+1), h
+        ld (ix+newXY), l
+        ld a,(ix+cRot)
+        ld (ix+newRot),a
+        pcall(fastCopy)
     pop af
     ret
 
-GetLinkInfo:                           ; Fins out what happens to the opponent
-    ld (ix+linkcnt),10                 ; Reset the link counter
-    ld a,(ix+players)
-    dec a
-    ret                                ; Networking disabled due to lack of support in KnightOS
+;GetLinkInfo:                           ; Fins out what happens to the opponent
+;    ld (ix+linkcnt),10                 ; Reset the link counter
+;    ld a,(ix+players)
+;    dec a
+;    ret                                ; Networking disabled due to lack of support in KnightOS
 ;    ret z                              ; If one player, leave this routine
 ;    kcall(ReceiveByte)                 ; Get a byte
 ;    or a
@@ -1726,7 +1738,7 @@ Scoring:                             ; Score for each level
     .db 4,10,30,120
 
 LevelCnts:
-     .db 40,36,32,28,25,22,19,17,15,13,11,10,9,8,7,6,5,4,3,2,1
+    .db 40,36,32,28,25,22,19,17,15,13,11,10, 9, 8, 7, 6, 5, 4, 3, 2, 1
 
 Resume:
     .db 0

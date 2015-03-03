@@ -70,6 +70,18 @@ start:
     ld bc, memSize
     pcall(malloc)
     ret nz                             ; Exit if insufficient memory
+    ; Read high scores from file
+    kld(de, hiscorePath)
+    pcall(fileExists)
+    jr nz, ReProgStart
+    pcall(openFileRead)
+    push ix
+        kld(ix, Hiscore)
+        ld bc, 48
+        pcall(streamReadBuffer)
+    pop ix
+    pcall(closeStream)
+
     ; Knightos TODO:
     ; Disable the TIOS style resume code (storing persistent variables in the program itself)
     ; and make it instead simply pause and switch back to castle.
@@ -387,6 +399,8 @@ CheckLevChg:
     jr ChangeRow
 
 DecHigh:
+    ; KnightOS TODO:
+    ; Clear height number area and fix level selector
     ld a,(ix+high)
     or a
     jr z,ZGetKey                       ; Don't decrease if high is 0
@@ -523,6 +537,7 @@ DelayLoop:
     ; This delay is a crappy fix for the screwed up timing.
     ; I have no idea why the timing is screwed up in the first place.
     ; Anyways, a comparison should be done with the TIOS version to make sure everything is roughly in sync
+    ; Or better yet, add RTC based timing
     ld bc,35000
 dwait2:
     dec bc
@@ -531,6 +546,8 @@ dwait2:
     jr nz,dwait2
 
     corelib(appGetKey)
+    ; KnightOS TODO:
+    ; Redraw immediately after a context switch
     cp kClear
     kjp(z,AbortGame)
     cp kMode
@@ -693,7 +710,6 @@ PLoop:
     jr nz, PLoop
     ; KnightOS TODO:
     ; Redraw game grid
-    ; and add context switch above
     kjp(Wait)
     ; KnightOS:
     ; The following seems to be a timer that shuts off the calc after a while
@@ -1046,6 +1062,20 @@ RepClear:
         ld bc, 10
         corelib(promptString)
     pop ix
+    ; Store high scores to file
+    kld(de, hiscoreDir)
+    pcall(directoryExists)
+    pcall(nz, createDirectory)
+    kld(de, hiscorePath)
+    pcall(fileExists)
+    pcall(z, deleteFile)
+    pcall(openFileWrite)
+    push ix
+        kld(ix, Hiscore)
+        ld bc, 48
+        pcall(streamWriteBuffer)
+    pop ix
+    pcall(closeStream)
     kjp(LevelChoose)
 
 CheckBar:                              ; Find out how it goes for ya
@@ -1749,6 +1779,11 @@ Resume:
 
 ; KnightOS TODO:
 ; High scores should be written to a file
+hiscoreDir:
+    .db "/var/ztetris",0
+hiscorePath:
+    .db "/var/ztetris/hiscore",0
+
 Hiscore:
     .db "1. ----------",0,0,0
     .db "2. ----------",0,0,0

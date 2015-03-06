@@ -72,16 +72,15 @@ CONTROL
 -------
 ```
 Choosing players:    Up/Down      - Change number of players
-                     1/2          - Choose that number of players
-                     Clear        - Quit
+                     Mode         - Quit
 
 At the option menu:  Arrowkeys    - Choose level
-                     Enter        - Start level
+                     Enter/2nd    - Start level
                      S            - Toggle "2-4 lines", "1-3 lines" (LP only)
                      L            - Toggle scrambled/unscrambled lines (LP)
-                     Trace        - Decrease start high
-                     Graph        - Increase start high
-                     Clear        - Quit game
+                     Minus        - Decrease start high
+                     Plus         - Increase start high
+                     Mode         - Quit game
 
 When playing:        Left & Right - Move the piece to the left and right
                      Up & 2nd     - Rotate clockwise
@@ -93,10 +92,6 @@ When playing:        Left & Right - Move the piece to the left and right
                      Del          - Teacher key. Quickly jumps out to
                                     TI-OS. The game will resume when you
                                     start it the next time.
-
-When typing name:    A-Z, Space   - Enter letter (max 10 chars)
-                     Enter        - Continue
-                     Left arrow   - Backspace
 ```
 
 SCORING

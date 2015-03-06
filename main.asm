@@ -113,8 +113,11 @@ start:
 ;    kjp(MainLoop)
     jr ReProgStart
 
+; KnightOS TODO:
+; Put Menu and Game code in seperate files
+
 ; Invert selected level
-PutDigit:                              ; Puts digit A on the correct place
+drawLevelCursor:                       ; Puts digit A on the correct place
     push af                            ; Used when choosing ProgStart level
     push bc
         ld l, 15
@@ -137,7 +140,9 @@ FirstRow:
     pop af
     ret
 
-levelNums:
+; KnightOS TODO:
+; This function is only used once and should probably be spliced straight into the code
+drawLevelGrid:
     ld de, 16 << 8 | 16
     xor a
     ld b, 5
@@ -174,6 +179,20 @@ levelNumsLoop4:                        ; Draw horizontal lines
     ld e, a
     ld l, a
     djnz levelNumsLoop4
+    ret
+
+drawHeightNum:
+    ld bc, 7 << 8 | 5
+    ld e, 64
+    ld l, 21
+    ; KnightOS TODO:
+    ; These pushes and pops are a workaround for KnightOS bug #277
+    ; I could fix it but I don't feel like it right now
+    push af
+        pcall(rectAND)                     ; Clear area
+    pop af
+    ld de, 65 << 8 | 22
+    pcall(drawDecA)                    ; And show the High
     ret
 
 ReProgStart:
@@ -262,7 +281,7 @@ NewDigit:
     ld de, 14 << 8 | 8                 ; "Level:"
     kld(hl,levelTxt)
     pcall(drawStr)
-    kcall(levelNums)
+    kcall(drawLevelGrid)
     ld de, 63 << 8 | 14
     kld(hl,HighTxt)                    ; "Height"
     pcall(drawStr)
@@ -278,6 +297,10 @@ NewDigit:
     ld e, 28
     ld l, 28
     pcall(drawLine)
+    ld a, (ix+level)
+    kcall(drawLevelCursor)             ; Invert the ProgStarting level digit
+    ld a,(ix+high)
+    kcall(drawHeightNum)
     ld a,(ix+players)
     dec a                              ; Check if the hiscore should be shown
     jr nz,Show2PlayOpt                 ; or two player options
@@ -328,13 +351,7 @@ Show2PlayOpt:
     xor a
     ld (ix+declines),a                 ; Clear the flags to the two option above
     ld (ix+scrflag),a
-    kcall(levelNums)
 ZWaitKey:
-    ld a,(ix+level)
-    kcall(PutDigit)                    ; Invert the ProgStarting level digit
-    ld a,(ix+high)
-    ld de, 65 << 8 | 22
-    pcall(drawDecA)                    ; And show the High
     ld a,(ix+players)
     dec a                              ; If two players, the two players options
     jr z,ZGetKey                       ; should be shown as well
@@ -385,8 +402,6 @@ ZGetKey:
     add hl,de
     pop de
     pcall(drawStr)                     ; Update it on the screen
-ToZWaitKey:                            ; This label is to avoid JPs below (saves a few bytes)
-    jr ZWaitKey
 CheckLevChg:
     dec a
     jr z,ChangeRow
@@ -399,13 +414,12 @@ CheckLevChg:
     jr ChangeRow
 
 DecHigh:
-    ; KnightOS TODO:
-    ; Clear height number area and fix level selector
     ld a,(ix+high)
     or a
     jr z,ZGetKey                       ; Don't decrease if high is 0
     dec a
     ld (ix+high),a
+    kcall(drawHeightNum)
     kjp(ZWaitKey)
 
 IncHigh:
@@ -414,6 +428,7 @@ IncHigh:
     jr z,ZGetKey                       ; Don't increase if high is 5
     inc a
     ld (ix+high),a
+    kcall(drawHeightNum)
     kjp(ZWaitKey)
 
 ChangeRow:
@@ -425,9 +440,10 @@ ChkLevEdges:
 SetLevel:
     ld b,a
     ld a,(ix+level)
-    kcall(PutDigit)                    ; Remove the inverted digit
+    kcall(drawLevelCursor)             ; Remove the inverted digit
     ld a,b
     ld (ix+level),a                    ; And set the new level
+    kcall(drawLevelCursor)
     kjp(ZWaitKey)
 LevLeft:
     ld a,(ix+level)
@@ -1777,8 +1793,6 @@ Resume:
     .db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
     .db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 
-; KnightOS TODO:
-; High scores should be written to a file
 hiscoreDir:
     .db "/var/ztetris",0
 hiscorePath:

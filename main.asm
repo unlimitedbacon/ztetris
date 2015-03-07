@@ -680,11 +680,19 @@ PLoop:
     pcall(flushKeys)
     corelib(appWaitKey)
     ; KnightOS TODO:
-    ; Switch either change key map (unpause with 2nd or Mode) or change to use a dialog box
-    cp 9
-    jr nz, PLoop
+    ; It might be better to use corelib's showMessage here
+    ; but I like being able to see most of the screen while paused
+    cp kEnter
+    jr z, Unpause
+    cp k2nd
+    jr z, Unpause
+    cp kMode
+    jr z, Unpause
+    jr PLoop
+Unpause::
     ; KnightOS TODO:
     ; Redraw game grid
+    pcall(flushKeys)
     kjp(Wait)
     ; KnightOS:
     ; The following seems to be a timer that shuts off the calc after a while

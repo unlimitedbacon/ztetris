@@ -89,9 +89,9 @@ When playing:        Left & Right - Move the piece to the left and right
                      Alpha        - Rotate anti-clockwise
                      Clear        - Quit game
                      Mode         - Pause
-                     Del          - Teacher key. Quickly jumps out to
-                                    TI-OS. The game will resume when you
-                                    start it the next time.
+                     Del          - Teacher key. Quickly pauses the game and
+                                    jumps out to the Castle.
+                                    
 ```
 
 SCORING

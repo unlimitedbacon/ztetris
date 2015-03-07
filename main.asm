@@ -81,36 +81,8 @@ start:
         pcall(streamReadBuffer)
     pop ix
     pcall(closeStream)
-
-    ; Knightos TODO:
-    ; Disable the TIOS style resume code (storing persistent variables in the program itself)
-    ; and make it instead simply pause and switch back to castle.
-    ; Perhaps add option to store savegame to flash.
-;    kld(hl, Resume)
-;    ld a,(hl)
-;    or a                               ; Check if the game should resume
-;    jr z,ReProgStart
-;    ld (hl),0                          ; Clear that flag so it doesn't resume next time
-;    inc hl
-;    push ix \ pop de
-;    ld bc,67
-;    ldir                               ; Copy variables
-;    push ix \ pop de
-;    add e, board
-;    jr nc, _
-;    inc d
-;_: ld bc,40
-;    ldir
-;    kcall(ShowLayout)
-;    kcall(ShowInfo)
-;    kcall(ShowWell)
-;    kcall(ShowCurB)
-;    push ix \ pop hl
-;    ld de, cB+16
-;    add hl, de
-;    ld de,0x1403
-;    kcall(ShowB)                       ; This will show the next bit
-;    kjp(MainLoop)
+    ; KnightOS TODO:
+    ; Add way to save/load game from file
     jr ReProgStart
 
 ; KnightOS TODO:
@@ -563,6 +535,9 @@ dwait2:
 
     corelib(appGetKey)
     ; KnightOS TODO:
+    ; corelib suspends the thread when switching to the castle or threadlist
+    ; but it might be fun to show off KnightOS's multitasking abilities by not doing that
+    ; KnightOS TODO:
     ; Redraw immediately after a context switch
     cp kClear
     kjp(z,AbortGame)
@@ -660,27 +635,11 @@ Drop:                                  ; When dropping, increase score with the
     ;kcall(GetLinkInfo)                 ; Get link info
     jr BotReached                      ; Bottom reached, store piece.
 
-; KnightOS TODO:
-; Make this pause and switch to the castle
 TeacherKey:
     ld a,(ix+players)
     dec a
     kjp(nz,Wait)                       ; If two players, teacher key not allowed
-    inc a
-    kld(de,Resume)
-    ld (de),a                          ; Set the resume flag
-    inc de
-    push ix \ pop hl
-    ld bc,67                           ; Copy all variables
-    ldir
-    ld bc, board
-    push ix
-        add ix, bc
-        push ix \ pop hl
-    pop ix
-    ld bc,40
-    ldir                               ; And the well
-    kjp(Quit)
+    corelib(launchCastle)
 
 Pause:
     ld a,(ix+players)
@@ -1783,15 +1742,6 @@ Scoring:                             ; Score for each level
 
 LevelCnts:
     .db 40,36,32,28,25,22,19,17,15,13,11,10, 9, 8, 7, 6, 5, 4, 3, 2, 1
-
-Resume:
-    .db 0
-    .db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    .db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    .db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    .db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    .db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    .db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 
 hiscoreDir:
     .db "/var/ztetris",0

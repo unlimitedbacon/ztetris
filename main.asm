@@ -690,8 +690,23 @@ PLoop:
     jr z, Unpause
     jr PLoop
 Unpause::
-    ; KnightOS TODO:
     ; Redraw game grid
+    pcall(clearBuffer)
+    kcall(ShowLayout)
+    kcall(ShowInfo)
+    kcall(ShowWell)
+    kcall(ShowCurB)
+    push ix \ pop hl                   ; Show next piece
+    ld de, cB+16
+    add hl, de
+    ld de, 0x1403
+    kcall(ShowB)
+    ;ld a, (ix+players)                ; Show bar in multiplayer mode
+    ;dec a
+    ;jr z, _
+    ;ld a, (ix+lastbar)
+    ;kcall(ShowBar)
+    pcall(fastCopy)
     pcall(flushKeys)
     kjp(Wait)
     ; KnightOS:
@@ -1273,7 +1288,7 @@ NoScoring:
     cp l                               ; Check if the level should increase
     jr nc,NoNewLevel
     ld a,l
-    ld (ix+level),a                       ; Update the levle
+    ld (ix+level),a                    ; Update the levle
     kcall(PastePattern)
     kcall(ShowPattern)
     ld a,(ix+players)
@@ -1809,6 +1824,8 @@ ScrambleTxt:
     .db "unscramble",0
     .db " scrambled ",0
 
+; What is this for?
+; I don't think we need it
 Letters:
     .db 0x1A,0x22,0x2A,0x0B,0x13,0x1B,0x23,0x2B,0x0C,0x14,0x1C
     .db 0x24,0x2C,0x0D,0x15,0x1D,0x25,0x2D,0x0E,0x16,0x1E,0x26

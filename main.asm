@@ -519,21 +519,29 @@ MainLoop:                              ; The main loop
     ld a,(hl)                          ; A = the delay time of the current level
     ld (ix+counter),a
 DelayLoop:
+    ; Timing measurements for this loop (T-States):
+    ; MirageOS:     Ion:        KnightOS (ZTv1.1.1):
+    ; 166655        144840      86509
+    ; 166737        144777      86509
+    ; 166602        143577      85704
+    ; 166667        144782      86509
+    ; 166667        143577      86509
+    ; 166667        144777      86509
     res 1,(ix+flags)                   ; Clear the update flag
     
     ; KnightOS TODO:
-    ; This delay is a crappy fix for the screwed up timing.
-    ; I have no idea why the timing is screwed up in the first place.
-    ; Anyways, a comparison should be done with the TIOS version to make sure everything is roughly in sync
-    ; Or better yet, add RTC based timing
-    ld bc,35000
-dwait2:
-    dec bc
-    ld a,b
-    or c
-    jr nz,dwait2
+    ; Switch to interrupt based timing once its implemented in KnightOS
+    ; This is what the MirageOS version uses
 
-    corelib(appGetKey)
+    ; KnightOS TODO:
+    ; TIOS's getCSC filters repeats
+    ; getKey does not
+    ; I think the best way to handle this is to remember the last key
+    ; and only repeat it after at least 3 loops.
+    ; lastKey would be reset if the key is released so that you can move faster
+    ; than the natural repeat
+    corelib(appGetKey)                 ; TIOS:     2596 T-States
+                                       ; KnightOS: 2199 T-States
     ; KnightOS TODO:
     ; corelib suspends the thread when switching to the castle or threadlist
     ; but it might be fun to show off KnightOS's multitasking abilities by not doing that
@@ -566,8 +574,14 @@ Wait:
     bit 1,(ix+flags)                   ; Check if anything happened (movements)
     kcall(nz,Update)                   ; If so, update that
 
-    ;ld bc,3200
-    ld bc, 800
+    ;ld bc,3200                        ; TIOS:     84910, 86115 T-States
+                                       ; KnightOS: 84010
+    ; KnightOS TODO:
+    ; Change delay depending on clock speed of CPU
+    ;ld bc, 6258                       ; 6 Mhz Calcs
+    ld bc, 15645                       ; 15 Mhz Calcs
+                                       ; This gives correct fall rate on the TI-84+SE
+                                       ; but the keys still repeat too easily
 dwait:
     dec bc
     ld a,b
@@ -575,7 +589,9 @@ dwait:
     jr nz,dwait
     
     ;dec (ix+linkcnt)
-    ;kcall(z,GetLinkInfo)               ; If the link counter reaches zero, check link port
+    ;kcall(z,GetLinkInfo)              ; If the link counter reaches zero, check link port
+                                       ; I suspect that this call consumed about 3058 T-States
+                                       ; dwait counter increased above to compensate
     dec (ix+counter)                   ; Decrease the counter
     jr nz,DelayLoop                    ; If not zero, check for keys again
     jr FallDown

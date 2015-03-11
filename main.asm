@@ -51,11 +51,13 @@ sbyte     .equ 63      ;* BYTE
 sthigh    .equ 64      ;* BYTE
 high      .equ 65      ;* BYTE
 linkcnt   .equ 66      ;* BYTE
-board     .equ 67      ;* 40 BYTE
-;107 Bytes total
-APD_BUF   .equ 107     ;* 768 BYTE
-;875 Bytes total
-memSize   .equ 875
+lastKey   .equ 67      ;* BYTE
+lastKCnt  .equ 68      ;* BYTE
+board     .equ 69      ;* 40 BYTE
+;108 Bytes total
+APD_BUF   .equ 109     ;* 768 BYTE
+;876 Bytes total
+memSize   .equ 877
 
 start:
     ; KnightOS:
@@ -494,6 +496,8 @@ ResetVars:
     ld (ix+lines), a
     ld (ix+score+1), a
     ld (ix+score), a
+    ld (ix + lastKey), a
+    ld (ix + lastKCnt), 5
     kcall(NewB)                        ; Prepares a new piece
     pcall(fastCopy)
     ld a,(ix+high)
@@ -520,26 +524,18 @@ MainLoop:                              ; The main loop
     ld (ix+counter),a
 DelayLoop:
     ; Timing measurements for this loop (T-States):
-    ; MirageOS:     Ion:        KnightOS (ZTv1.1.1):
-    ; 166655        144840      86509
-    ; 166737        144777      86509
-    ; 166602        143577      85704
-    ; 166667        144782      86509
-    ; 166667        143577      86509
-    ; 166667        144777      86509
+    ; 6 Mhz:                    15 Mhz:
+    ; MirageOS:     Ion:        KnightOS (ZTv1.1.1):    KnightOS (ZTv1.1.2):
+    ; 166655        144840      86509                   412569
+    ; 166737        144777      86509                   412562
+    ; 166602        143577      85704                   412562
+    ; 166667        144782      86509                   413367
+    ; 166667        143577      86509                   412569
+    ; 166667        144777      86509                   413367
     res 1,(ix+flags)                   ; Clear the update flag
-    
     ; KnightOS TODO:
     ; Switch to interrupt based timing once its implemented in KnightOS
     ; This is what the MirageOS version uses
-
-    ; KnightOS TODO:
-    ; TIOS's getCSC filters repeats
-    ; getKey does not
-    ; I think the best way to handle this is to remember the last key
-    ; and only repeat it after at least 3 loops.
-    ; lastKey would be reset if the key is released so that you can move faster
-    ; than the natural repeat
     corelib(appGetKey)                 ; TIOS:     2596 T-States
                                        ; KnightOS: 2199 T-States
     ; KnightOS TODO:
@@ -547,6 +543,24 @@ DelayLoop:
     ; but it might be fun to show off KnightOS's multitasking abilities by not doing that
     ; KnightOS TODO:
     ; Redraw immediately after a context switch
+
+    ; TIOS's getCSC filters repeats, but KnightOS's getKey does not
+    ; The following remembers the last key pressed
+    ; and only repeats it after 5 loops.
+    ; lastKey is reset if the key is released
+    ; so that you can move faster than the natural repeat
+    cp (ix + lastKey)
+    jr nz, notSameKey
+    dec (ix + lastKCnt)
+    jr z, repeatKey
+    xor a
+    jr doKey
+notSameKey:
+    ld (ix + lastKey), a               ; Save last key
+repeatKey:
+    ld b, 5                            ; Reset key repeat counter
+    ld (ix + lastKCnt), b
+doKey:
     cp kClear
     kjp(z,AbortGame)
     cp kMode
@@ -581,7 +595,6 @@ Wait:
     ;ld bc, 6258                       ; 6 Mhz Calcs
     ld bc, 15645                       ; 15 Mhz Calcs
                                        ; This gives correct fall rate on the TI-84+SE
-                                       ; but the keys still repeat too easily
 dwait:
     dec bc
     ld a,b
@@ -590,8 +603,6 @@ dwait:
     
     ;dec (ix+linkcnt)
     ;kcall(z,GetLinkInfo)              ; If the link counter reaches zero, check link port
-                                       ; I suspect that this call consumed about 3058 T-States
-                                       ; dwait counter increased above to compensate
     dec (ix+counter)                   ; Decrease the counter
     jr nz,DelayLoop                    ; If not zero, check for keys again
     jr FallDown
@@ -881,7 +892,6 @@ Sync:
 ;    ld (ix+linkcnt),10                 ; Reset the link counter
 ;    ld a,(ix+players)
 ;    dec a
-;    ret                                ; Networking disabled due to lack of support in KnightOS
 ;    ret z                              ; If one player, leave this routine
 ;    kcall(ReceiveByte)                 ; Get a byte
 ;    or a

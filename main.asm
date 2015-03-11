@@ -75,7 +75,7 @@ start:
     ; Read high scores from file
     kld(de, hiscorePath)
     pcall(fileExists)
-    jr nz, ReProgStart
+    kjp(nz, ReProgStart)
     pcall(openFileRead)
     push ix
         kld(ix, Hiscore)

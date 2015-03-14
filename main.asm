@@ -40,7 +40,7 @@ string    .equ 45      ;* 6 BYTE
 place     .equ 51      ;* BYTE
 cNBitOfs  .equ 52      ;* WORD
 players   .equ 54      ;* BYTE
-lcounter  .equ 55      ;* WORD   Apparently this is never used
+lcounter  .equ 55      ;* WORD
 declines  .equ 57      ;* BYTE
 stlevel   .equ 58      ;* BYTE
 lastbar   .equ 59      ;* BYTE
@@ -1889,4 +1889,4 @@ Gaps:                                ; Gaps where the pattern shouldn't be shown
     .dw 0x1B1 \ .db 0xEF,14,23         ;Lines
     .dw 0x271 \ .db 0xEF,10,23         ;Next piece
 
-.end
+#include "link.asm"

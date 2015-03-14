@@ -25,7 +25,7 @@ rb_w_Start:
  and	3			; (check if either line is low)
  cp	3
  jr nz,rb_get_bit
- call Test_ON
+ kcall(Test_ON)
  jr rb_w_Start
 rb_get_bit:
  ld l,0   		; reset lcounter
@@ -37,7 +37,7 @@ rb_get_bit:
  out (0),a		; Ack for a '1'
  rr c			; put the 1 (cf has been set by cp)
 rb_waitstop1:
- call Test_On
+ kcall(Test_On)
  in a, (0)
 ; and $8			; wait 'til Ack is recognized
  and 2				; (line1 pulled low?)
@@ -50,7 +50,7 @@ rb_receive_zero:
  out (0),a		; (pull line1 low)
  rr c			; put the 0 (cf has been cleared by cp)
 rb_waitStop0:
- call Test_On
+ kcall(Test_On)
  in a,(0)
 ; and $4			; wait 'til Ack is recognized
  and 1				; (is line0 low (the ack))
@@ -75,7 +75,8 @@ Test_ON:
 
 SendByte:
  ld hl,0
- ld (lcounter),hl
+ ld (ix + lcounter), l
+ ld (ix + lcounter +1), h
  ld b,8
  ld c,a			; byte to send (using bit rotates into carry to find bit to send)
  ld d, a			; Save it
@@ -89,7 +90,7 @@ w_setport3:
  and 3				; (are either line low?)
  cp 3
  jr z, calc_bit
- call SendTest_ON
+ kcall(SendTest_ON)
  jr w_setport3
 calc_bit:
  rr c				; (is the next bit to send a 1 or 0?)
@@ -101,7 +102,7 @@ send_zero:
 send_one:
  out (0),A
 wait_setport:
- call SendTest_ON
+ kcall(SendTest_ON)
  in a,(0)
 ; and $C			; wait both become low
  and 3				; (are both lines low?)
@@ -119,16 +120,18 @@ SendTest_ON:
  jr z,LongWait
 ; bcall(_getk)	; dunno, I don't have a getk equate
 ; cp $09
- bcall(_getcsc)
- cp $0f			; If this is clear, exit !
+ pcall(getKey)
+ cp 0x0f			; If this is clear, exit !
  ret nz
  pop hl
  pop hl
- jp Quit
+ kjp(Quit)
 LongWait:
- ld hl,(lcounter)
+ ld l, (ix + lcounter)
+ ld h, (ix + lcounter + 1)
  inc hl
- ld (lcounter),hl
+ ld (ix + lcounter), l
+ ld (ix + lcounter + 1), h
  bit 6, h		; Has the counter reached $4000
  ret z			; no, continue
  pop hl

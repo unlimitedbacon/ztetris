@@ -357,7 +357,7 @@ ZGetKey:
     cp kPlus
     jr z,IncHigh
     cp kRParen                         ; Right Parentheses
-    jr z,ChangeScrFlag
+    kjp(z,ChangeScrFlag)
     cp kLn
     jr nz,CheckLevChg
     ld a,(ix+players)

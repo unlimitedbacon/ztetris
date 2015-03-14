@@ -6,17 +6,17 @@ The best TI-83+ Tetris ported to [KnightOS](http://www.knightos.org/).
 ![Screenshot 2](http://a.pomf.se/udfteg.png)
 ![Screenshot 3](http://a.pomf.se/zxgkgj.png)
 
-[Original](http://www.ticalc.org/archives/files/fileinfo/94/9489.html) by Jimmy Mårdell  <yarin@acc.umu.se>
-Sam Heald <evil_sam@hotmail.com>
-Patrick Davidson <eeulplek@hotmail.com>
+[Original](http://www.ticalc.org/archives/files/fileinfo/94/9489.html) by Jimmy Mårdell  <yarin@acc.umu.se>,
+Sam Heald <evil_sam@hotmail.com>, and
+Patrick Davidson <eeulplek@hotmail.com>.
 
-ION and Ti-83/+ Version by Ahmed El-Helw <ahmed.ticalc.org>
+ION and Ti-83/+ Version by Ahmed El-Helw <ahmed@ticalc.org>
 
 ## Compiling
 
-First, install the [KnightOS SDK](http://www.knightos.org/sdk).
+First, install the [KnightOS SDK](http://www.knightos.org/sdk). You will also need the new [scas](https://github.com/KnightOS/scas) assembler. Sass will not work.
 
-    $ knightos init
+    $ knightos init --assembler=scas
     $ make
     $ make run # to test
     $ make package # to produce an installable package
@@ -158,13 +158,18 @@ KNOWN BUGS
 
 VERSION HISTORY
 ---------------
-ION Version 1.1 R3
--Fixed random bugs
+KnightOS Version 1.2.0
+- Full KnightOS port with fancy UI thanks to corelib
+- 2 Player mode disabled until KnightOS supports the link port
+- See GitHub issue tracker for known bugs
 
-ION Version 1.1 R2  * Released by Ahmed El-Helw again :)
+ION Version 1.1 R3
+- Fixed random bugs
+
+ION Version 1.1 R2 Released by Ahmed El-Helw again :)
 - Fixed the link routines, thanks Dan! [dan@calc.org, http://tcpa.calc.org]
 
-ION Version 1.1 *Released by Sam Heald
+ION Version 1.1 Released by Sam Heald
 - Fixed the speed (exactly like 82,86 versions)
 - Fixed Blinking text bug (no more black line)
 - Changed pause screen to shut down after ~1 minute (battery saver)

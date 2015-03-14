@@ -1803,7 +1803,7 @@ Hiscore:
     .db "3. ----------",0,0,0
 
 Title:
-    .db "ZTetris v1.1",0
+    .db "ZTetris v1.2",0
 
 Coder:
     .db "by: Sam H/Jimmy M/Pat D/AE",0

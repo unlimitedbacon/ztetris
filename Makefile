@@ -6,7 +6,7 @@ ALL_TARGETS:=$(BIN)ztetris $(APPS)ztetris.app $(SHARE)icons/ztetris.img
 # This is all the make targets to produce said files
 $(BIN)ztetris: main.asm
 	mkdir -p $(BIN)
-	$(AS) $(ASFLAGS) --listing $(OUT)main.list main.asm $(BIN)ztetris
+	$(AS) $(ASFLAGS) main.asm $(BIN)ztetris
 
 $(APPS)ztetris.app: config/ztetris.app
 	mkdir -p $(APPS)

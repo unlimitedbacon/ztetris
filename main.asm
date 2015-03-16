@@ -163,7 +163,7 @@ drawHeightNum:
     ; These pushes and pops are a workaround for KnightOS bug #277
     ; I could fix it but I don't feel like it right now
     push af
-        pcall(rectAND)                     ; Clear area
+        pcall(rectAND)                 ; Clear area
     pop af
     ld de, 65 << 8 | 22
     pcall(drawDecA)                    ; And show the High
@@ -243,9 +243,6 @@ ChangePlayers:
     ld (hl),a
     jr ChoosePlayers
 LevelChoose:
-    ld a, (ix + players)               ; KnightOS: Disable multiplayer due to lack of link support
-    cp 2
-    jr z, ChoosePlayers
     kcall(ShowFrame)                   ; I know I used these 2x, but that's to stop the on screen trash.
     ld a,(ix+stlevel)
     ld (ix+level),a                    ; The cursor will ProgStart at the last played level
@@ -307,21 +304,16 @@ NewPos:
     djnz NewPos
     jr ZWaitKey
 Show2PlayOpt:
-    ; KnightOS TODO:
-    ; Fix drawing 2 player options
-    ld de,0x0005
+    ld de, 14 << 8 | 38
     kld(hl,SLTxt)
     pcall(drawStr)                     ; "Send 2-4 lines"
-    push de
-    ld de,0x0006
+    ld de, 14 << 8 | 44
     kld(hl,InfoText3)
     pcall(drawStr)                     ; "Lines "
-    ;set 3,(iy+5)                      ; Invert text
-    ld a,76
-    pcall(drawChar)                    ; Invert the 'S'
-    pop de
-    ld a,83
-    pcall(drawChar)                    ; And the 'L'
+    ld bc, 13 << 8 | 5
+    ld e, 13
+    ld l, 37
+    pcall(rectXOR)                     ; Invert S and L
     xor a
     ld (ix+declines),a                 ; Clear the flags to the two option above
     ld (ix+scrflag),a
@@ -329,16 +321,18 @@ ZWaitKey:
     ld a,(ix+players)
     dec a                              ; If two players, the two players options
     jr z,ZGetKey                       ; should be shown as well
-    ld de,0x0606
+    ld bc, 7 << 8 | 43
+    ld e, 32
+    ld l, 44
+    pcall(rectAND)
     kld(hl,ScrambleTxt)
     ld a,(ix+scrflag)
     or a
     jr z,ShowScrFlag
-    push de
     ld de,12
     add hl,de
-    pop de
 ShowScrFlag:
+    ld de, 32 << 8 | 44
     pcall(drawStr)                     ; Show "scrambled" or "unscrambled"
 ZGetKey:
     pcall(fastCopy)
@@ -368,14 +362,19 @@ ZGetKey:
     ld (ix+declines),a
     add a,a
     add a,a
-    ld de,0x0505
+    ld bc, 6 << 8 | 12
+    ld e, 31
+    ld l, 38
+    push af                            ; KnightOS TODO: Bug #277
+        pcall(rectAND)
+    pop af
     kld(hl,NLTxt)
-    push de
     ld d,0
     ld e,a
     add hl,de
-    pop de
+    ld de, 31 << 8 | 38
     pcall(drawStr)                     ; Update it on the screen
+    jr ZGetKey
 CheckLevChg:
     dec a
     jr z,ChangeRow
@@ -1847,15 +1846,8 @@ NLTxt:
     .db "1-3",0
 
 ScrambleTxt:
-    .db "unscramble",0
-    .db " scrambled ",0
-
-; What is this for?
-; I don't think we need it
-Letters:
-    .db 0x1A,0x22,0x2A,0x0B,0x13,0x1B,0x23,0x2B,0x0C,0x14,0x1C
-    .db 0x24,0x2C,0x0D,0x15,0x1D,0x25,0x2D,0x0E,0x16,0x1E,0x26
-    .db 0x2E,0x1F,0x27,0x2F
+    .db "unscrambled",0
+    .db "scrambled",0
 
 InfoText1:
     .db "Score",0

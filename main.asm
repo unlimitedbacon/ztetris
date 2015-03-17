@@ -175,13 +175,13 @@ ReProgStart:
     kld(hl,Coder)
     pcall(drawStr)
     kld(hl,PlChoose)                   ; "Choose player mode"
-    ld de, 15*256+18                   ; X = 15 Y = 18
+    ld de, 15 << 8 | 18                   ; X = 15 Y = 18
     pcall(drawStr)
     kld(hl,PlChoose1)                  ; "1 player"
-    ld de, 32*256+24
+    ld de, 32 << 8 | 24
     pcall(drawStr)
     kld(hl,PlChoose2)                  ; "2 player"
-    ld de, 32*256+30
+    ld de, 32 << 8 | 30
     pcall(drawStr)
     xor a
     ld (ix+stlevel),a                  ; When ProgStarting a new game, stLevel and stHigh
@@ -444,19 +444,19 @@ ProgStartGame:
     xor a
     ld (ix+lastbar),a
 
-    ; Networking is disabled due to lack of KnightOS support
-    ;kcall(ShowFrame)
-    ;ld de,0x0304
-    ;kld(hl,WaitTxt)
-    ;pcall(drawStr)                     ; "* WAITING *"
+    kcall(ShowFrame)
+    ld de, 15 << 8 | 24
+    kld(hl,WaitTxt)
+    pcall(drawStr)                     ; "* WAITING *"
+    pcall(fastCopy)
 
-    ;kcall(ReceiveByte)
-    ;or a
-    ;jr nz,NoWait                       ; If byte gotten, the other calc was waiting
-    ;ld a,1
-    ;ld (ix+hsflag),a                   ; This will allow the user to cancel with EXIT
-    ;ld a,0xAA
-    ;kcall(SendByte)                    ; Else wait until the other calc responds
+    kcall(ReceiveByte)
+    or a
+    jr nz,NoWait                       ; If byte gotten, the other calc was waiting
+    ld a,1
+    ld (ix+hsflag),a                   ; This will allow the user to cancel with EXIT
+    ld a,0xAA
+    kcall(SendByte)                    ; Else wait until the other calc responds
 
 NoWait:
     xor a
@@ -482,7 +482,7 @@ InitRow:                               ; Setting up the border aroudn the well
     djnz InitRow
 
     kcall(ShowLayout)
-    ;ld (ix+linkcnt),10                 ; This counter decrease every frame. When 0,
+    ld (ix+linkcnt),10                 ; This counter decrease every frame. When 0,
     ld a,(ix+players)                  ; check link port. If too often check, it slows down
     dec a
     ld a,0                             ; Can't use 'xor a' here! It would affect the Z flag
@@ -600,15 +600,15 @@ dwait:
     or c
     jr nz,dwait
     
-    ;dec (ix+linkcnt)
-    ;kcall(z,GetLinkInfo)              ; If the link counter reaches zero, check link port
+    dec (ix+linkcnt)
+    kcall(z,GetLinkInfo)              ; If the link counter reaches zero, check link port
     dec (ix+counter)                   ; Decrease the counter
     jr nz,DelayLoop                    ; If not zero, check for keys again
     jr FallDown
 MoveDown:
     inc (ix+scoreU)                    ; When DOWN is pressed, increase the score
 FallDown:
-    ;kcall(GetLinkInfo)                 ; Before moving down, always check linkport
+    kcall(GetLinkInfo)                 ; Before moving down, always check linkport
     dec (ix+newXY)                     ; Decrease the y coordinate
     kcall(Update)                      ; Check if possible
     kjp(z,MainLoop)                    ; If so, repeat mainloop
@@ -658,7 +658,7 @@ Drop:                                  ; When dropping, increase score with the
     dec (ix+newXY)                     ; Decrease Y coordinate
     kcall(Update)                      ; Update it on screen
     jr z,Drop                          ; If OK, move down again
-    ;kcall(GetLinkInfo)                 ; Get link info
+    kcall(GetLinkInfo)                 ; Get link info
     jr BotReached                      ; Bottom reached, store piece.
 
 TeacherKey:
@@ -887,44 +887,44 @@ Sync:
     pop af
     ret
 
-;GetLinkInfo:                           ; Fins out what happens to the opponent
-;    ld (ix+linkcnt),10                 ; Reset the link counter
-;    ld a,(ix+players)
-;    dec a
-;    ret z                              ; If one player, leave this routine
-;    kcall(ReceiveByte)                 ; Get a byte
-;    or a
-;    jr z,CheckSByte                    ; If no byte received, check if a byte should be sent
-;    ld b,a
-;    and 0x0F
-;    ld c,a
-;    ld a,b
-;    srl a
-;    srl a
-;    srl a
-;    srl a
-;    cp 0x0F
-;    jr z,PenaltyRows
-;    cp 0x0C
-;    kjp(z,YouWinP)
-;    cp 0x0D
-;    jr z,UpdateBar
-;    cp 0x0E
-;    ret nz
-;    ld c,16
-;UpdateBar:
-;    ld a,c
-;    kjp(ShowBar)
-;PenaltyRows:
-;    ld a,c
-;    inc a
-;    kjp(AddLines)
+GetLinkInfo:                           ; Fins out what happens to the opponent
+    ld (ix+linkcnt),10                 ; Reset the link counter
+    ld a,(ix+players)
+    dec a
+    ret z                              ; If one player, leave this routine
+    kcall(ReceiveByte)                 ; Get a byte
+    or a
+    jr z,CheckSByte                    ; If no byte received, check if a byte should be sent
+    ld b,a
+    and 0x0F
+    ld c,a
+    ld a,b
+    srl a
+    srl a
+    srl a
+    srl a
+    cp 0x0F
+    jr z,PenaltyRows
+    cp 0x0C
+    kjp(z,YouWinP)
+    cp 0x0D
+    jr z,UpdateBar
+    cp 0x0E
+    ret nz
+    ld c,16
+UpdateBar:
+    ld a,c
+    kjp(ShowBar)
+PenaltyRows:
+    ld a,c
+    inc a
+    kjp(AddLines)
 
-;CheckSByte:
-;    ld a,(ix+sbyte)                    ; Check if byte in send buffer
-;    or a
-;    kcall(nz,SendByte)                 ; If so, send it
-;    ret
+CheckSByte:
+    ld a,(ix+sbyte)                    ; Check if byte in send buffer
+    or a
+    kcall(nz,SendByte)                 ; If so, send it
+    ret
 
 AbortGame:
     ld a,(ix+players)
@@ -960,16 +960,15 @@ GameOver:
     jr z,FlashGameOver                 ; If a two player game, send a byte telling
     ld a,0xC0                          ; that you lost
     ld b,3
-; Networking disabled
-;SendWinByte:
-;    push bc
-;    kcall(SendByte)
-;    kcall(ReceiveByte)                 ; This is for clearing up stuff (if both sent
-;    ld a,(ix+sbyte)                    ; at the same time)
-;    or a
-;    pop bc
-;    jr z,FlashGameOver
-;    djnz SendWinByte
+SendWinByte:
+    push bc
+        kcall(SendByte)
+        kcall(ReceiveByte)             ; This is for clearing up stuff (if both sent
+        ld a,(ix+sbyte)                ; at the same time)
+        or a
+    pop bc
+    jr z,FlashGameOver
+    djnz SendWinByte
 FlashGameOver:
     corelib(appGetKey)
     cp kEnter
@@ -1015,7 +1014,6 @@ WFlashWait:
     jr YouWin
 
 CheckHiscore:
-    ;kcall(Quitter)
     kcall(Quit)
     ld a,(ix+players)
     dec a
@@ -1124,8 +1122,7 @@ RepCheckBar:
     djnz RepCheckBar
 EmptyRow:
     add a,0xD0
-    ; Networking disabled
-    ;kjp(SendByte)                      ; Send high information to opponent
+    kjp(SendByte)                      ; Send high information to opponent
 
 ShowCurB:                              ; This shows the current piece
     push ix \ pop hl
@@ -1265,8 +1262,7 @@ NextRow:
     neg                                ; Now A = no of penalty lines
     push af
     or 0xF0
-    ; Networking disabled
-    ;kcall(SendByte)                   ; Send it over to the opponent
+    kcall(SendByte)                   ; Send it over to the opponent
     pop af
     add a,(ix+lastbar)                 ; Increase the opponents bar
     inc a
@@ -1664,7 +1660,7 @@ MK_SameByte:
                 ld a,d
             pop hl
             pop bc
-            ld de,12                       ; was 16
+            ld de,12                   ; was 16
             add hl,de
             djnz MK_Row
             ld de,5

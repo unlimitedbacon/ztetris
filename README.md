@@ -161,6 +161,7 @@ VERSION HISTORY
 KnightOS Version 1.2.0
 - Full KnightOS port with fancy UI thanks to corelib
 - 2 Player mode disabled until KnightOS supports the link port
+- Source code published under MIT license with permission from Jimmy Mårdell
 - See GitHub issue tracker for known bugs
 
 ION Version 1.1 R3

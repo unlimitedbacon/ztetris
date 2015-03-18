@@ -74,7 +74,6 @@ Test_ON:
     ret
 
 SendByte:
-    jr $
     ld hl,0
     ld (ix + lcounter), l
     ld (ix + lcounter +1), h

@@ -445,7 +445,7 @@ ProgStartGame:
     ld (ix+lastbar),a
 
     kcall(ShowFrame)
-    ld de, 15 << 8 | 24
+    ld de, 29 << 8 | 26
     kld(hl,WaitTxt)
     pcall(drawStr)                     ; "* WAITING *"
     pcall(fastCopy)

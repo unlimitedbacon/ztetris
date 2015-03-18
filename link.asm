@@ -74,6 +74,7 @@ Test_ON:
     ret
 
 SendByte:
+    jr $
     ld hl,0
     ld (ix + lcounter), l
     ld (ix + lcounter +1), h
@@ -115,7 +116,7 @@ wait_setport:
     ret
 
 SendTest_ON:
-    ld a,(hsflag)
+    ld a,(ix + hsflag)
     or a
     jr z,LongWait
     ;bcall(_getk)       ; dunno, I don't have a getk equate

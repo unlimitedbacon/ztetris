@@ -674,47 +674,36 @@ Pause:
     ; KnightOS TODO:
     ; This and the similar code in GameOver should be turned into a function
     ; Draw box
-    ld de, 32 << 8 | 27
-    ld hl, 64 << 8 | 27
-    pcall(drawLine)
-    ld e, 35
-    ld l, 35
-    pcall(drawLine)
-    ld a, 32
-    ld l, 28
-    ld c, 7
-    pcall(drawVLine)
-    add a, 32
-    pcall(drawVLine)
-    ; Clear area
-    ld bc, 7 << 8 | 31
-    ld e, 33
-    ld l, 28
-    pcall(rectAND)
-    ; Draw text
-    ld de, 34 << 8 | 29
+    ;ld de, 32 << 8 | 27
+    ;ld hl, 64 << 8 | 27
+    ;pcall(drawLine)
+    ;ld e, 35
+    ;ld l, 35
+    ;pcall(drawLine)
+    ;ld a, 32
+    ;ld l, 28
+    ;ld c, 7
+    ;pcall(drawVLine)
+    ;add a, 32
+    ;pcall(drawVLine)
+    ;; Clear area
+    ;ld bc, 7 << 8 | 31
+    ;ld e, 33
+    ;ld l, 28
+    ;pcall(rectAND)
+    ;; Draw text
+    ;ld de, 34 << 8 | 29
     kld(hl,PauseTxt)
-    pcall(drawStr)                     ; "* PAUSE *"
-    pcall(fastCopy)
-    ;ld b,24
-PLoop2:
-    ;ld (hl),0xFF
-PLoop:
-    ;ei
-    ;halt
-    pcall(fastCopy)
-    pcall(flushKeys)
-    corelib(appWaitKey)
+    ;pcall(drawStr)                     ; "* PAUSE *"
+    ;pcall(fastCopy)
+    kld(de, pauseOptions)
+    xor a
+    ld b, a
+    corelib(showMessage)
     ; KnightOS TODO:
-    ; It might be better to use corelib's showMessage here
-    ; but I like being able to see most of the screen while paused
-    cp kEnter
-    jr z, Unpause
-    cp k2nd
-    jr z, Unpause
-    cp kMode
-    jr z, Unpause
-    jr PLoop
+    ; Put calculator to sleep after a while
+    cp 1
+    kjp(z, Quit)
 Unpause::
     ; Redraw game grid
     pcall(clearBuffer)
@@ -735,25 +724,6 @@ Unpause::
     pcall(fastCopy)
     pcall(flushKeys)
     kjp(Wait)
-    ; KnightOS:
-    ; The following seems to be a timer that shuts off the calc after a while
-    ; Disabled because this should be handled by the OS
-;    dec (hl)
-;    xor a
-;    or (hl)                            ; Make  HL activate Z-Flag
-;    jr nz,PLoop
-;    ld a,b
-;    dec b
-;    or a
-;    jr nz,PLoop2
-;PsuedoAPD:
-;    DI                                 ; disable interrupts
-;    LD A,0x01
-;    OUT (0x03),A                       ; turn off screen
-;    EX AF,AF'
-;    EXX
-;    EI                                 ; enable interrupts
-;    jr Pause
 
 ShowBar:                               ; Show the bar
     ld (ix+lastbar),a
@@ -1725,6 +1695,9 @@ Quit:
     ;pcall(_cleargbuf)
     ret
 
+; Draws a box with some text in it
+textBox:
+
 DM_HL_DECI3:                           ; Display HL in menu style with leading zeros
     push de
         push hl
@@ -1814,13 +1787,16 @@ GameOverText:
     .db "Game Over",0
 
 WinTxt:
-    .db " You Win ",0
+    .db "You Win",0
 
 PauseTxt:
-    .db "* PAUSE *",0
+    .db "\nPaused",0
 
 WaitTxt:
-    .db "* WAITING *",0
+    .db "Waiting...",0
+
+pauseOptions:
+    .db 2, "Continue", 0, "Quit", 0
 
 EnterTxt:
     .db "You have a hiscore!",0

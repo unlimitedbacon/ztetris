@@ -956,6 +956,8 @@ RepClear:
         push hl \ pop ix
         kld(hl,EnterTxt)
         ld bc, 10
+        xor a
+        ld (ix), a
         corelib(promptString)
     pop ix
     ; Store high scores to file

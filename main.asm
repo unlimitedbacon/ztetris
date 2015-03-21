@@ -445,7 +445,7 @@ ProgStartGame:
     ld (ix+lastbar),a
 
     kcall(ShowFrame)
-    ld de, 29 << 8 | 26
+    ld de, 34 << 8 | 26
     kld(hl,WaitTxt)
     pcall(drawStr)                     ; "* WAITING *"
     pcall(fastCopy)
@@ -671,31 +671,7 @@ Pause:
     ld a,(ix+players)
     dec a
     kjp(nz,Wait)                       ; Pause not allowed in two player game
-    ; KnightOS TODO:
-    ; This and the similar code in GameOver should be turned into a function
-    ; Draw box
-    ;ld de, 32 << 8 | 27
-    ;ld hl, 64 << 8 | 27
-    ;pcall(drawLine)
-    ;ld e, 35
-    ;ld l, 35
-    ;pcall(drawLine)
-    ;ld a, 32
-    ;ld l, 28
-    ;ld c, 7
-    ;pcall(drawVLine)
-    ;add a, 32
-    ;pcall(drawVLine)
-    ;; Clear area
-    ;ld bc, 7 << 8 | 31
-    ;ld e, 33
-    ;ld l, 28
-    ;pcall(rectAND)
-    ;; Draw text
-    ;ld de, 34 << 8 | 29
     kld(hl,PauseTxt)
-    ;pcall(drawStr)                     ; "* PAUSE *"
-    ;pcall(fastCopy)
     kld(de, pauseOptions)
     xor a
     ld b, a
@@ -716,11 +692,6 @@ Unpause::
     add hl, de
     ld de, 0x1403
     kcall(ShowB)
-    ;ld a, (ix+players)                ; Show bar in multiplayer mode
-    ;dec a
-    ;jr z, _
-    ;ld a, (ix+lastbar)
-    ;kcall(ShowBar)
     pcall(fastCopy)
     pcall(flushKeys)
     kjp(Wait)
@@ -903,31 +874,9 @@ AbortGame:
 
 GameOver:
     pcall(flushKeys)
-    ; Draw box
-    ld de, 29 << 8 | 27
-    ld hl, 66 << 8 | 27
-    pcall(drawLine)
-    ld e, 35
-    ld l, 35
-    pcall(drawLine)
-    ld a, 29
-    ld l, 28
-    ld c, 7
-    pcall(drawVLine)
-    add a, 37
-    pcall(drawVLine)
-    ; Clear area
-    ld bc, 7 << 8 | 36
-    ld e, 30
-    ld l, 28
-    pcall(rectAND)
-    ; Draw text
-    ld de, 31 << 8 | 29
-    kld(hl,GameOverText)
-    pcall(drawStr)
     ld a,(ix+players)
     dec a
-    jr z,FlashGameOver                 ; If a two player game, send a byte telling
+    jr z, CheckHiscore                 ; If a two player game, send a byte telling
     ld a,0xC0                          ; that you lost
     ld b,3
 SendWinByte:
@@ -937,57 +886,13 @@ SendWinByte:
         ld a,(ix+sbyte)                ; at the same time)
         or a
     pop bc
-    jr z,FlashGameOver
+    jr z, CheckHiscore
     djnz SendWinByte
-FlashGameOver:
-    corelib(appGetKey)
-    cp kEnter
-    jr z,CheckHiscore
-    cp k2nd
-    jr z,CheckHiscore
-    pcall(fastCopy)
-    ld bc, 7 << 8 | 36
-    ld e, 30
-    ld l, 28
-    pcall(rectXOR)
-    ei
-    ld b,20
-FlashWait:
-    halt
-    djnz FlashWait
-    jr FlashGameOver
-
-YouWinP:
-    pop hl
-YouWin:
-    ; KnightOS TODO:
-    ; Fix Winning screen
-    ; I think this is just for multiplayer
-    pcall(flushKeys)
-    corelib(appWaitKey)
-    cp 0x09
-    jr z,CheckHiscore
-    cp 0x0f
-    jr z,CheckHiscore
-    ;ld a,(iy+5)                       ; Invert textFlags
-    ;xor 8
-    ;ld (iy+5),a
-    pcall(fastCopy)
-    ld de,0x0403
-    kld(hl,WinTxt)
-    pcall(drawStr)
-    ei
-    ld b,20
-WFlashWait:
-    halt
-    djnz WFlashWait
-    jr YouWin
 
 CheckHiscore:
-    kcall(Quit)
     ld a,(ix+players)
     dec a
-    kjp(nz,LevelChoose)                ; No hiscore when two players
+    kjp(nz,gameOverMessage)            ; No hiscore when two players
     kld(hl,Hiscore+14)                 ; HL -> hiscore
     ld d, (ix+score+1)                 ; DE = your score
     ld e, (ix+score)
@@ -1003,7 +908,7 @@ CheckP:
     add hl,de                          ; HL -> next score in hiscore table
     pop de
     djnz CheckP
-    kjp(LevelChoose)                   ; Not in hiscore table
+    kjp(gameOverMessage)
 ScoreGreater:
     ld a,4
     sub b
@@ -1067,6 +972,28 @@ RepClear:
         pcall(streamWriteBuffer)
     pop ix
     pcall(closeStream)
+    kjp(LevelChoose)
+
+gameOverMessage:
+    kld(hl, GameOverText)
+    kld(de, gameOverOptions)
+    xor a
+    ld b, a
+    corelib(showMessage)
+    cp 1
+    kjp(z, Quit)
+    kjp(LevelChoose) 
+
+YouWinP:
+    pop hl
+YouWin:
+    kld(hl, WinTxt)
+    kld(de, gameOverOptions)
+    xor a
+    ld b, a
+    corelib(showMessage)
+    cp 1
+    kjp(z, Quit)
     kjp(LevelChoose)
 
 CheckBar:                              ; Find out how it goes for ya
@@ -1786,17 +1713,20 @@ PlChoose2:
 GameOverText:
     .db "Game Over",0
 
+gameOverOptions:
+    .db 2, "Replay", 0, "Quit", 0
+
 WinTxt:
     .db "You Win",0
 
 PauseTxt:
-    .db "\nPaused",0
-
-WaitTxt:
-    .db "Waiting...",0
+    .db "Paused",0
 
 pauseOptions:
     .db 2, "Continue", 0, "Quit", 0
+
+WaitTxt:
+    .db "Waiting...",0
 
 EnterTxt:
     .db "You have a hiscore!",0

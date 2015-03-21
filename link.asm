@@ -121,7 +121,7 @@ SendTest_ON:
     ;bcall(_getk)       ; dunno, I don't have a getk equate
     ;cp $09
     pcall(getKey)
-    cp 0x0f             ; If this is clear, exit !
+    cp kMode            ; If this is clear, exit !
     ret nz
     pop hl
     pop hl

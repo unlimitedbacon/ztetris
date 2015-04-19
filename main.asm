@@ -159,7 +159,7 @@ drawHeightNum:
     ld bc, 7 << 8 | 5
     ld e, 58
     ld l, 21
-    pcall(rectAND)                 ; Clear area
+    pcall(rectAND)                     ; Clear area
     ld de, 59 << 8 | 22
     pcall(drawDecA)                    ; And show the High
     ret
@@ -1661,7 +1661,7 @@ LD_HL_MHL:
 ;  ████   ██    ██     ██    █    █       █
 ;
 
-BitData:                             ; Compressed data of the pieces (28 pieces)
+BitData:                               ; Compressed data of the pieces (28 pieces)
     .dw 0b0001010110011000,0b0110010100000100
     .dw 0b0010000101011001,0b0110101001010100
     .dw 0b0001010110010000,0b0010011001010100
@@ -1677,7 +1677,7 @@ BitData:                             ; Compressed data of the pieces (28 pieces)
     .dw 0b0001010110011101,0b0111011001010100
     .dw 0b0001010110011101,0b0111011001010100
 
-Scoring:                             ; Score for each level
+Scoring:                               ; Score for each level
     .db 4,10,30,120
 
 LevelCnts:
@@ -1754,7 +1754,7 @@ InfoText2:
     .db "Level",0
 InfoText3:
     .db "Lines",0
-Pattern:                             ; Pattern for each level
+Pattern:                               ; Pattern for each level
     .db 0xAA,0x55,0xAA,0x55,0xAA,0x55,0xAA,0x55
     .db 0x88,0xFF,0x22,0xFF,0x88,0xFF,0x22,0xFF
     .db 0xFF,0x99,0x99,0xFF,0xFF,0x99,0x99,0xFF
@@ -1773,7 +1773,7 @@ Pattern:                             ; Pattern for each level
     .db 0xFF,0xEF,0x47,0x12,0xB8,0xFD,0xFF,0xFF
 
     .db 5
-Gaps:                                ; Gaps where the pattern shouldn't be shown
+Gaps:                                  ; Gaps where the pattern shouldn't be shown
     .dw 0x005 \ .db 0xEF,64,42         ;well
     .dw 0x001 \ .db 0xEF,14,23         ;score
     .dw 0x0D9 \ .db 0xEF,14,23         ;level

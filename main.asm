@@ -159,12 +159,7 @@ drawHeightNum:
     ld bc, 7 << 8 | 5
     ld e, 58
     ld l, 21
-    ; KnightOS TODO:
-    ; These pushes and pops are a workaround for KnightOS bug #277
-    ; I could fix it but I don't feel like it right now
-    push af
-        pcall(rectAND)                 ; Clear area
-    pop af
+    pcall(rectAND)                 ; Clear area
     ld de, 59 << 8 | 22
     pcall(drawDecA)                    ; And show the High
     ret
@@ -366,9 +361,7 @@ ZGetKey:
     ld bc, 6 << 8 | 12
     ld e, 34
     ld l, 38
-    push af                            ; KnightOS TODO: Bug #277
-        pcall(rectAND)
-    pop af
+    pcall(rectAND)
     kld(hl,NLTxt)
     ld d,0
     ld e,a

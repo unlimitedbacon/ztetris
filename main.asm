@@ -399,7 +399,7 @@ DecHigh:
 IncHigh:
     ld a,(ix+high)
     cp 5
-    jr z,ZGetKey                       ; Don't increase if high is 5
+    kjp(z,ZGetKey)                     ; Don't increase if high is 5
     inc a
     ld (ix+high),a
     kcall(drawHeightNum)

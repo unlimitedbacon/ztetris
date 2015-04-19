@@ -157,7 +157,7 @@ levelNumsLoop4:                        ; Draw horizontal lines
 
 drawHeightNum:
     ld bc, 7 << 8 | 5
-    ld e, 64
+    ld e, 58
     ld l, 21
     ; KnightOS TODO:
     ; These pushes and pops are a workaround for KnightOS bug #277
@@ -165,17 +165,18 @@ drawHeightNum:
     push af
         pcall(rectAND)                 ; Clear area
     pop af
-    ld de, 65 << 8 | 22
+    ld de, 59 << 8 | 22
     pcall(drawDecA)                    ; And show the High
     ret
 
 ReProgStart:
     kcall(ShowFrame)                   ; Show title
-    ld de, 2 << 8 | 50                 ; X = 2, Y = 50
+    ld de, 6 << 8 | 44                 ; X = 6, Y = 50
+    ld b, 16                           ; Center second line
     kld(hl,Coder)
     pcall(drawStr)
     kld(hl,PlChoose)                   ; "Choose player mode"
-    ld de, 15 << 8 | 18                   ; X = 15 Y = 18
+    ld de, 12 << 8 | 18                ; X = 12 Y = 18
     pcall(drawStr)
     kld(hl,PlChoose1)                  ; "1 player"
     ld de, 32 << 8 | 24
@@ -190,7 +191,7 @@ ReProgStart:
     ld (ix+players),a                  ; Default option, 1 player
 ChoosePlayers:
     ld a,(ix+players)
-    ld d, 28                           ; X = 29
+    ld d, 26                           ; X = 26
     push af
         add a,3
         push af                        ; Multiply by 6 (1 row of text)
@@ -204,7 +205,7 @@ ChoosePlayers:
         ld a, 62                       ; >
         pcall(drawChar)                ; Put the small arrow
     pop af
-    ld d, 28
+    ld d, 26
     sub 6
     neg
     push af
@@ -253,17 +254,17 @@ NewDigit:
     kld(hl,levelTxt)
     pcall(drawStr)
     kcall(drawLevelGrid)
-    ld de, 63 << 8 | 14
+    ld de, 57 << 8 | 14
     kld(hl,HighTxt)                    ; "Height"
     pcall(drawStr)
     ld c, 7                            ; Draw box for height number
-    ld a, 63
+    ld a, 57
     ld l, 21
     pcall(drawVLine)
     add a, 6
     pcall(drawVLine)
-    ld de, 63 << 8 | 20
-    ld hl, 69 << 8 | 20
+    ld de, 57 << 8 | 20
+    ld hl, 63 << 8 | 20
     pcall(drawLine)
     ld e, 28
     ld l, 28
@@ -275,14 +276,14 @@ NewDigit:
     ld a,(ix+players)
     dec a                              ; Check if the hiscore should be shown
     jr nz,Show2PlayOpt                 ; or two player options
-    ld de, 14 << 8 | 32
+    ld de, 10 << 8 | 32
     kld(hl,hiScoresTxt)
     pcall(drawStr)
     kld(hl,Hiscore)
     ld a, 38
     ld b, 3
 NewPos:
-    ld d, 14
+    ld d, 10
     ld e, a
     add a,6
     push af
@@ -294,7 +295,7 @@ NewPos:
         ld b,5                         ; Show 5 digits for high scores
         push hl
             kcall(LD_HL_MHL)           ; Get that persons score
-            ld d, 63
+            ld d, 66
             kcall(DM_HL_DECI3)         ; And show it
         pop hl
         inc hl
@@ -321,8 +322,8 @@ ZWaitKey:
     ld a,(ix+players)
     dec a                              ; If two players, the two players options
     jr z,ZGetKey                       ; should be shown as well
-    ld bc, 7 << 8 | 43
-    ld e, 32
+    ld bc, 6 << 8 | 43
+    ld e, 38
     ld l, 44
     pcall(rectAND)
     kld(hl,ScrambleTxt)
@@ -332,7 +333,7 @@ ZWaitKey:
     ld de,12
     add hl,de
 ShowScrFlag:
-    ld de, 32 << 8 | 44
+    ld de, 38 << 8 | 44
     pcall(drawStr)                     ; Show "scrambled" or "unscrambled"
 ZGetKey:
     pcall(fastCopy)
@@ -363,7 +364,7 @@ ZGetKey:
     add a,a
     add a,a
     ld bc, 6 << 8 | 12
-    ld e, 31
+    ld e, 34
     ld l, 38
     push af                            ; KnightOS TODO: Bug #277
         pcall(rectAND)
@@ -372,7 +373,7 @@ ZGetKey:
     ld d,0
     ld e,a
     add hl,de
-    ld de, 31 << 8 | 38
+    ld de, 34 << 8 | 38
     pcall(drawStr)                     ; Update it on the screen
     jr ZGetKey
 CheckLevChg:
@@ -1703,7 +1704,8 @@ Title:
     .db "ZTetris v1.2",0
 
 Coder:
-    .db "by: Sam H/Jimmy M/Pat D/AE",0
+    .db "Jimmy M, Sam H, Pat D,\n"
+    .db "Ahmed E, Tyler A",0
 
 PlChoose:
     .db "Choose player mode",0

@@ -2,11 +2,11 @@
 
 The best TI-83+ Tetris ported to [KnightOS](http://www.knightos.org/).
 
-![Screenshot 1](http://a.pomf.se/rnltvq.png)
-![Screenshot 2](http://a.pomf.se/udfteg.png)
-![Screenshot 3](http://a.pomf.se/zxgkgj.png)
+![Screenshot 1](https://sr.ht/2673.png)
+![Screenshot 2](https://sr.ht/efe7.png)
+![Screenshot 3](https://sr.ht/c254.png)
 
-[Original](http://www.ticalc.org/archives/files/fileinfo/94/9489.html) by Jimmy Mårdell  <yarin@acc.umu.se>,
+[Original](http://www.ticalc.org/archives/files/fileinfo/94/9489.html) by Jimmy MÃ¥rdell  <yarin@acc.umu.se>,
 Sam Heald <evil_sam@hotmail.com>, and
 Patrick Davidson <eeulplek@hotmail.com>.
 
@@ -161,7 +161,7 @@ VERSION HISTORY
 KnightOS Version 1.2.0
 - Full KnightOS port with fancy UI thanks to corelib
 - Working multiplayer
-- Source code published under MIT license with permission from Jimmy Mårdell
+- Source code published under MIT license with permission from Jimmy MÃ¥rdell
 - See GitHub issue tracker for known bugs
 
 ION Version 1.1 R3
@@ -262,5 +262,5 @@ Homepage:    http://www.acc.umu.se/~yarin/
 
 //Ahmed El-Helw <ahmed@ticalc.org / http://ahmed.ticalc.org>
 //Sam Heald <evil_sam@hotmail.com / http://void.calc.org>
-//Jimmy M†rdell <yarin@acc.umu.se / http://www.acc.umu.se/~yarin>
+//Jimmy MÂ†rdell <yarin@acc.umu.se / http://www.acc.umu.se/~yarin>
 //Patrick Davidson <eeulplek@hotmail.com>

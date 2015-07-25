@@ -1,4 +1,5 @@
 include .knightos/variables.make
+ASFLAGS:=--include "$(INCLUDE)"
 
 # This is a list of files that need to be added to the filesystem when installing your program
 ALL_TARGETS:=$(BIN)ztetris $(APPS)ztetris.app $(SHARE)icons/ztetris.img
